@@ -5,12 +5,10 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.admin import setup_admin
 from app.core.config import SECRET_KEY
-from app.core.database import init_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
     yield
 
 

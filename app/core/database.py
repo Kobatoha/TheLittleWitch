@@ -25,6 +25,5 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def init_db() -> None:
+    """Deprecated: use `alembic upgrade head` to apply schema migrations."""
     from app import models  # noqa: F401
-
-    Base.metadata.create_all(bind=engine)
