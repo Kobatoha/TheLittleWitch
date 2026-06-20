@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.admin import setup_admin
-from app.config import SECRET_KEY
-from app.database import init_db
+from app.core.config import SECRET_KEY
+from app.core.database import init_db
 
 
 @asynccontextmanager

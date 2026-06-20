@@ -1,7 +1,7 @@
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 
-from app.config import ADMIN_PASSWORD, ADMIN_USERNAME, SECRET_KEY
+from app.core.config import ADMIN_PASSWORD, ADMIN_USERNAME, SECRET_KEY
 
 
 class AdminAuth(AuthenticationBackend):
