@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ведьмин Сад</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
+        .bed { border: 2px solid #444; border-radius: 10px; padding: 15px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+        .empty { color: #666; }
+        .ready { border-color: #6f6; }
+        .growing { border-color: #aa6; }
+    </style>
+</head>
+<body>
+    <h1>🌱 Твой сад</h1>
+    <div id="garden">
+        {% for bed in beds %}
+        <div class="bed {% if bed.is_ready %}ready{% else %}growing{% endif %}">
+            <div>
+                {% if bed.plant_name %}
+                    <strong>{{ bed.plant_name }}</strong><br>
+                    Влажность: {{ bed.moisture }}%<br>
+                    {% if bed.is_ready %}
+                        ✅ Готово к сбору!
+                    {% else %}
+                        ⏳ Созреет: {{ bed.ready_at }}
+                    {% endif %}
+                {% else %}
+                    <span class="empty">Пустая грядка</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h2>Посадить растение</h2>
+    <form action="/api/game/garden/plant" method="post">
+        <select name="plant_id">
+            {% for p in plants %}
+            <option value="{{ p.id }}">{{ p.name }} ({{ p.growth_time }} мин)</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Посадить!</button>
+    </form>
+</body>
+</html>
