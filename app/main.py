@@ -1,0 +1,33 @@
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from starlette.middleware.sessions import SessionMiddleware
+
+from app.admin import setup_admin
+from app.config import SECRET_KEY
+from app.database import init_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(
+    title="TLW",
+    description="FastAPI + SQLite + SQLAdmin",
+    lifespan=lifespan,
+)
+
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+setup_admin(app)
+
+
+@app.get("/")
+def root():
+    return {
+        "message": "API работает",
+        "admin": "/admin",
+        "docs": "/docs",
+    }
