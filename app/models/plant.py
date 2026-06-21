@@ -1,4 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
 
 class Plant(Base):
@@ -11,6 +13,9 @@ class Plant(Base):
     base_harvest_count = Column(Integer, default=1)           # сколько плодов при сборе
     icon = Column(String, nullable=True)                      # путь к картинке (потом)
     description = Column(String, nullable=True)
+
+    # Отношения
+    garden_beds = relationship("GardenBed", back_populates="plant")
 
     def __str__(self) -> str:
         return self.name

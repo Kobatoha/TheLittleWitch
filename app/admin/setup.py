@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from sqladmin import Admin
 
 from app.admin.auth import authentication_backend
-from app.admin.views import CategoryAdmin, ItemAdmin, UserAdmin
+from app.admin.views import CategoryAdmin, ItemAdmin, UserAdmin, PlantAdmin, GardenBedAdmin
 from app.core.database import engine
 
 
@@ -18,5 +18,7 @@ def setup_admin(app: FastAPI) -> Admin:
     admin.add_view(UserAdmin)
     admin.add_view(CategoryAdmin)
     admin.add_view(ItemAdmin)
+    admin.add_view(PlantAdmin)
+    admin.add_view(GardenBedAdmin)
 
     return admin
