@@ -21,6 +21,12 @@ router = APIRouter()
 class WaterRequest(BaseModel):
     bed_id: int
 
+def format_dt(dt) -> str:
+    """Красиво форматирует datetime для сада."""
+    if dt is None:
+        return "—"
+    return dt.strftime("%d.%m.%Y %H:%M")
+
 @router.get("/garden", response_model=list[schemas.GardenBedOut])
 def get_garden(db: Session = Depends(get_db)):
     beds = services.get_player_garden(db, TEMP_PLAYER_ID)
@@ -55,13 +61,33 @@ def garden_page(request: Request, db: Session = Depends(get_db)):
     })
 
 def bed_to_dict(bed):
+    is_ready = bed.ready_at and bed.ready_at <= datetime.utcnow()
+
+    # Сколько минут осталось
+    if bed.ready_at and not is_ready:
+        delta = bed.ready_at - datetime.utcnow()
+        minutes_left = int(delta.total_seconds() / 60)
+        if minutes_left < 1:
+            time_left = "Меньше минуты"
+        elif minutes_left == 1:
+            time_left = "1 минута"
+        elif minutes_left < 5:
+            time_left = f"{minutes_left} минуты"
+        else:
+            time_left = f"{minutes_left} минут"
+    elif is_ready:
+        time_left = "✅ Готово!"
+    else:
+        time_left = "—"
+
     return {
         "id": bed.id,
         "plant_name": bed.plant.name if bed.plant else None,
-        "planted_at": bed.planted_at,
-        "ready_at": bed.ready_at,
+        "planted_at": format_dt(bed.planted_at),
+        "ready_at": format_dt(bed.ready_at),
+        "time_left": time_left,
         "moisture": bed.moisture,
-        "is_ready": bed.ready_at and bed.ready_at <= datetime.utcnow()
+        "is_ready": is_ready,
     }
 
 @router.post("/garden/water")
