@@ -9,6 +9,9 @@ from app.models.player import Player
 
 MAX_BEDS_PER_PLAYER = 4       # максимум грядок у одного игрока
 PLANT_COST_ENERGY = 10        # энергия на посадку
+WATER_COST_ENERGY = 5           # энергия на полив
+WATER_MOISTURE_BOOST = 30       # сколько влажности добавляет полив
+MAX_MOISTURE = 100              # максимум влажности
 
 def get_player_garden(db: Session, player_id: int):
     """Возвращает все грядки игрока."""
@@ -69,3 +72,56 @@ def plant_seed(db: Session, player_id: int, plant_id: int) -> GardenBed:
     db.commit()
     db.refresh(bed)
     return bed
+
+def can_water(db: Session, player_id: int, bed_id: int) -> tuple[bool, str]:
+    """Проверяет, можно ли полить грядку."""
+    player = db.query(Player).filter(Player.id == player_id).first()
+    if not player:
+        return False, "Игрок не найден"
+
+    if player.energy < WATER_COST_ENERGY:
+        return False, f"Недостаточно энергии! Нужно {WATER_COST_ENERGY}, у тебя {player.energy}"
+
+    bed = db.query(GardenBed).filter(
+        GardenBed.id == bed_id,
+        GardenBed.player_id == player_id
+    ).first()
+    if not bed:
+        return False, "Грядка не найдена"
+    if bed.plant_id is None:
+        return False, "На грядке ничего не растёт"
+    if bed.ready_at and bed.ready_at <= datetime.utcnow():
+        return False, "Растение уже созрело, поливать не нужно!"
+    if bed.moisture >= MAX_MOISTURE:
+        return False, "Влажность уже максимальная"
+
+    return True, ""
+
+def water_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
+    """Поливает грядку: тратит энергию, добавляет влажность, ускоряет рост."""
+    ok, error = can_water(db, player_id, bed_id)
+    if not ok:
+        raise ValueError(error)
+
+    bed = db.query(GardenBed).filter(
+        GardenBed.id == bed_id,
+        GardenBed.player_id == player_id
+    ).first()
+
+    # Тратим энергию игрока
+    player = db.query(Player).filter(Player.id == player_id).first()
+    player.energy -= WATER_COST_ENERGY
+
+    # Увеличиваем влажность
+    bed.moisture = min(bed.moisture + WATER_MOISTURE_BOOST, MAX_MOISTURE)
+    bed.times_watered += 1
+
+    # Ускоряем рост: вычитаем water_bonus минут из ready_at
+    if bed.plant and bed.ready_at:
+        bonus_minutes = bed.plant.water_bonus  # например, 15 минут
+        bed.ready_at = bed.ready_at - timedelta(minutes=bonus_minutes)
+
+    db.commit()
+    db.refresh(bed)
+    return bed
+    

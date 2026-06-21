@@ -54,15 +54,19 @@
     <h1>🌱 Твой сад</h1>
     <div id="garden">
         {% for bed in beds %}
-        <div class="bed {% if bed.is_ready %}ready{% else %}growing{% endif %}">
+        <div class="bed {% if bed.is_ready %}ready{% elif bed.plant_name %}growing{% endif %}">
             <div>
                 {% if bed.plant_name %}
                     <strong>{{ bed.plant_name }}</strong><br>
-                    Влажность: {{ bed.moisture }}%<br>
+                    Влажность: <span id="moisture-{{ bed.id }}">{{ bed.moisture }}</span>%<br>
                     {% if bed.is_ready %}
                         ✅ Готово к сбору!
                     {% else %}
-                        ⏳ Созреет: {{ bed.ready_at }}
+                        ⏳ Созреет: <span id="ready-{{ bed.id }}">{{ bed.ready_at }}</span>
+                        <br>
+                        <button onclick="waterBed('{{ bed.id }}')" style="margin-top:8px; font-size:14px;">
+                            💧 Полить
+                        </button>
                     {% endif %}
                 {% else %}
                     <span class="empty">Пустая грядка</span>
@@ -98,6 +102,35 @@
                 if (response.ok) {
                     msg.className = "success";
                     msg.textContent = "🌿 Посажено! Обнови страницу, чтобы увидеть грядку.";
+                } else {
+                    const error = await response.json();
+                    msg.className = "error";
+                    msg.textContent = "❌ " + error.detail;
+                }
+            } catch (e) {
+                msg.className = "error";
+                msg.textContent = "❌ Ошибка соединения";
+            }
+        }
+        async function waterBed(bedId) {
+            const msg = document.getElementById("message");
+            msg.className = "";
+            msg.textContent = "Поливаем...";
+
+            try {
+                const response = await fetch("/api/game/garden/water", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ bed_id: bedId })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    msg.className = "success";
+                    msg.textContent = `💧 Полито! Влажность: ${data.moisture}%, энергия: ${data.energy_left}`;
+                    // Обновим данные на странице без перезагрузки
+                    document.getElementById(`moisture-${bedId}`).textContent = data.moisture;
+                    document.getElementById(`ready-${bedId}`).textContent = data.ready_at;
                 } else {
                     const error = await response.json();
                     msg.className = "error";

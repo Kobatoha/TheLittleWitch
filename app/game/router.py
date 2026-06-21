@@ -1,5 +1,6 @@
 from pathlib import Path
 from datetime import datetime
+from pydantic import BaseModel
 
 from sqlalchemy.orm import Session
 
@@ -12,10 +13,13 @@ from app.core.database import get_db
 from app.core.config import TEMP_PLAYER_ID
 from app.game import services, schemas
 from app.models.plant import Plant
+from app.models.player import Player
 
 
 router = APIRouter()
 
+class WaterRequest(BaseModel):
+    bed_id: int
 
 @router.get("/garden", response_model=list[schemas.GardenBedOut])
 def get_garden(db: Session = Depends(get_db)):
@@ -59,3 +63,17 @@ def bed_to_dict(bed):
         "moisture": bed.moisture,
         "is_ready": bed.ready_at and bed.ready_at <= datetime.utcnow()
     }
+
+@router.post("/garden/water")
+def water_bed(request: WaterRequest, db: Session = Depends(get_db)):
+    try:
+        bed = services.water_bed(db, TEMP_PLAYER_ID, request.bed_id)
+        return {
+            "ok": True,
+            "plant_name": bed.plant.name if bed.plant else "?",
+            "moisture": bed.moisture,
+            "ready_at": bed.ready_at,
+            "energy_left": db.query(Player).filter(Player.id == TEMP_PLAYER_ID).first().energy
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
