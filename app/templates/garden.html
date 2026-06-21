@@ -1,13 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Ведьмин Сад</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
-        .bed { border: 2px solid #444; border-radius: 10px; padding: 15px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+        body {
+            font-family: sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .bed {
+            border: 2px solid #444;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #16213e;
+        }
         .empty { color: #666; }
         .ready { border-color: #6f6; }
         .growing { border-color: #aa6; }
+        button {
+            background: #7b2d8e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #9b3db0; }
+        select {
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .error {
+            color: #f66;
+            margin-top: 10px;
+        }
+        .success {
+            color: #6f6;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -33,13 +73,41 @@
     </div>
 
     <h2>Посадить растение</h2>
-    <form action="/api/game/garden/plant" method="post">
-        <select name="plant_id">
-            {% for p in plants %}
-            <option value="{{ p.id }}">{{ p.name }} ({{ p.growth_time }} мин)</option>
-            {% endfor %}
-        </select>
-        <button type="submit">Посадить!</button>
-    </form>
+    <select id="plantSelect">
+        {% for p in plants %}
+        <option value="{{ p.id }}">{{ p.name }} ({{ p.growth_time }} мин)</option>
+        {% endfor %}
+    </select>
+    <button onclick="plantSeed()">Посадить!</button>
+    <div id="message"></div>
+
+    <script>
+        async function plantSeed() {
+            const plantId = document.getElementById("plantSelect").value;
+            const msg = document.getElementById("message");
+            msg.className = "";
+            msg.textContent = "Сажаем...";
+
+            try {
+                const response = await fetch("/api/game/garden/plant", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plant_id: parseInt(plantId) })
+                });
+
+                if (response.ok) {
+                    msg.className = "success";
+                    msg.textContent = "🌿 Посажено! Обнови страницу, чтобы увидеть грядку.";
+                } else {
+                    const error = await response.json();
+                    msg.className = "error";
+                    msg.textContent = "❌ " + error.detail;
+                }
+            } catch (e) {
+                msg.className = "error";
+                msg.textContent = "❌ Ошибка соединения";
+            }
+        }
+    </script>
 </body>
 </html>

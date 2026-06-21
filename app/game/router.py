@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from pathlib import Path
+
 from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.game import services, schemas
+
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+
+from app.core.database import get_db
+from app.game import services, schemas
 from app.models.plant import Plant
 
 
@@ -43,7 +47,7 @@ def plant_seed(request: schemas.PlantRequest, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 
 @router.get("/garden/page", response_class=HTMLResponse)
 def garden_page(request: Request, db: Session = Depends(get_db)):
