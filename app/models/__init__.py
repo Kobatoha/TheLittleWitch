@@ -4,5 +4,6 @@ from app.models.user import User
 from app.models.player import Player
 from app.models.plant import Plant
 from app.models.garden_bed import GardenBed
+from app.models.inventory import Inventory
 
-__all__ = ["Category", "Item", "Player", "User", "Plant", "GardenBed"]
+__all__ = ["Category", "Item", "Player", "User", "Plant", "GardenBed", "Inventory"]

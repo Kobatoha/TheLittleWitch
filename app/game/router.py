@@ -23,6 +23,9 @@ class WaterRequest(BaseModel):
 class PlantRequest(BaseModel):
     plant_id: int
 
+class HarvestRequest(BaseModel):
+    bed_id: int
+
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 
 
@@ -92,3 +95,12 @@ def garden_page(request: Request, db: Session = Depends(get_db)):
         "beds": beds_out,
         "plants": plants
     })
+
+
+@router.post("/garden/harvest")
+def harvest_bed(request: HarvestRequest, db: Session = Depends(get_db)):
+    try:
+        result = services.harvest_bed(db, TEMP_PLAYER_ID, request.bed_id)
+        return {"ok": True, **result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

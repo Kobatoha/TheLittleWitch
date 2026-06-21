@@ -27,20 +27,27 @@ class CategoryAdmin(ModelView, model=Category):
 
 
 class ItemAdmin(ModelView, model=Item):
-    name = "Товар"
-    name_plural = "Товары"
+    name = "Предмет"
+    name_plural = "Предметы"
     icon = "fa-solid fa-box"
 
     column_list = [
         Item.id,
         Item.name,
-        Item.price,
-        Item.category,
-        Item.is_active,
+        Item.item_type,
+        Item.rarity,
+        Item.potency_boost,
     ]
     column_searchable_list = [Item.name]
-    column_sortable_list = [Item.id, Item.name, Item.price]
-    form_columns = [Item.name, Item.description, Item.price, Item.category, Item.is_active]
+    column_sortable_list = [Item.id, Item.name, Item.item_type, Item.rarity]
+    form_columns = [
+        Item.name,
+        Item.item_type,
+        Item.rarity,
+        Item.description,
+        Item.potency_boost,
+        Item.icon,
+    ]
 
 class PlantAdmin(ModelView, model=Plant):
     column_list = [

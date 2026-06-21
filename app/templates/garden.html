@@ -57,6 +57,8 @@
                     💀 <strong>Погибло</strong>
                 {% elif bed.can_harvest %}
                     ✅ <strong>Можно собирать!</strong>
+                    <br>
+                    <button onclick="harvestBed('{{ bed.id }}')">🧺 Собрать урожай</button>
                 {% else %}
                     <button onclick="waterBed('{{ bed.id }}')">💧 Полить</button>
                 {% endif %}
@@ -123,6 +125,38 @@
                 msg.className = "success";
                 msg.textContent = `💧 Полито! Стадия: ${data.stage_name}, Эссенция: ${data.essence}`;
                 setTimeout(() => location.reload(), 800);
+            } catch (e) {
+                msg.className = "error";
+                msg.textContent = "❌ Ошибка соединения";
+            }
+        }
+        async function harvestBed(bedId) {
+            const msg = document.getElementById("message");
+            msg.className = "";
+            msg.textContent = "Собираем...";
+
+            try {
+                const response = await fetch("/api/game/garden/harvest", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ bed_id: bedId })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    msg.className = "error";
+                    msg.textContent = "❌ " + (error.detail || "Ошибка сервера");
+                    return;
+                }
+
+                const data = await response.json();
+                const mainInfo = data.main_harvest.map(h => `${h.quantity}x ${h.name} (${h.quality})`).join(", ");
+                const bonusInfo = data.bonus_harvest.length > 0 ? ` | 🎁 Бонус: ${data.bonus_harvest.map(b => b.name).join(", ")}` : "";
+                const rareInfo = data.rare_harvest.length > 0 ? ` | 🌟 Удача: ${data.rare_harvest.map(r => r.name).join(", ")}` : "";
+                
+                msg.className = "success";
+                msg.innerHTML = `🧺 Собрано! ${mainInfo}${bonusInfo}${rareInfo}`;
+                setTimeout(() => location.reload(), 2000);
             } catch (e) {
                 msg.className = "error";
                 msg.textContent = "❌ Ошибка соединения";

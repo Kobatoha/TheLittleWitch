@@ -1,8 +1,8 @@
-"""clean growth system
+"""add items and inventory
 
-Revision ID: f1c68e2ed072
+Revision ID: 8990993397fc
 Revises: 
-Create Date: 2026-06-21 21:52:15.729150
+Create Date: 2026-06-21 23:51:45.913106
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'f1c68e2ed072'
+revision: str = '8990993397fc'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
