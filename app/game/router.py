@@ -93,7 +93,8 @@ def garden_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("garden.html", {
         "request": request,
         "beds": beds_out,
-        "plants": plants
+        "plants": plants,
+        "now": datetime.utcnow()
     })
 
 

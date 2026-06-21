@@ -16,6 +16,11 @@ class GardenBed(Base):
     essence = Column(Integer, default=0)               # Эссенция (растёт от ухода)
     growth_stage = Column(Integer, default=0)          # Цикл Роста: 0-100
 
+    # Восстановление и лимиты
+    last_watered_at = Column(DateTime, nullable=True)      # когда последний раз поливали
+    last_harvested_at = Column(DateTime, nullable=True)     # когда последний раз собирали
+    recovery_until = Column(DateTime, nullable=True)        # до какого времени растение восстанавливается
+
     planted_at = Column(DateTime, server_default=func.now())  # когда посадили (для истории)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -42,13 +47,39 @@ class GardenBed(Base):
         return self.vitality <= 0
 
     @property
-    def can_harvest(self) -> bool:
-        return self.growth_stage >= self.plant.min_harvest_stage if self.plant else False
-
-    @property
     def plant_name(self) -> str:
         return self.plant.name if self.plant else "—"
 
     def __str__(self) -> str:
         return f"Грядка {self.id} — {self.plant_name}"
-        
+
+    @property
+    def can_water(self) -> bool:
+        """Можно ли поливать: не умерло, не в зрелости, не на восстановлении, полив не использован сегодня."""
+        if self.is_dead:
+            return False
+        if self.plant_id is None:
+            return False
+        if self.growth_stage >= 100:
+            return False
+        if self.recovery_until and self.recovery_until > datetime.utcnow():
+            return False
+        # Проверка дневного лимита
+        if self.last_watered_at:
+            last_watered_date = self.last_watered_at.date()
+            today = datetime.utcnow().date()
+            if last_watered_date >= today:
+                return False
+        return True
+
+    @property
+    def can_harvest(self) -> bool:
+        """Можно ли собирать."""
+        if self.is_dead:
+            return False
+        if self.plant_id is None:
+            return False
+        if self.recovery_until and self.recovery_until > datetime.utcnow():
+            return False
+        return self.growth_stage >= (self.plant.min_harvest_stage if self.plant else 60)    
+            

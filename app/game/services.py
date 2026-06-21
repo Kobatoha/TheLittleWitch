@@ -72,15 +72,19 @@ def water_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     if bed.plant_id is None:
         raise ValueError("На грядке ничего не растёт")
     if bed.is_dead:
-        raise ValueError("Растение погибло. Удали его и посади новое.")
-    if bed.growth_stage >= 100:
-        raise ValueError("Растение уже в Зрелости! Собирай урожай.")
+        raise ValueError("Растение погибло.")
+    if not bed.can_water:
+        if bed.recovery_until and bed.recovery_until > datetime.utcnow():
+            raise ValueError(f"Растение восстанавливается до {format_dt(bed.recovery_until)}")
+        raise ValueError("Полив уже использован сегодня. Используй Искру Роста!")
 
     plant = bed.plant
 
+    # Восстановление живучести
     bed.vitality = min(bed.vitality + 15, plant.base_vitality)
     bed.essence += plant.essence_per_care
     bed.growth_stage = min(bed.growth_stage + plant.growth_per_care, 100)
+    bed.last_watered_at = datetime.utcnow()
 
     db.commit()
     db.refresh(bed)
@@ -89,7 +93,6 @@ def water_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
 # === СБОР УРОЖАЯ ===
 
 def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
-    """Собирает урожай с грядки. Возвращает словарь с результатами."""
     bed = db.query(GardenBed).filter(
         GardenBed.id == bed_id,
         GardenBed.player_id == player_id
@@ -99,9 +102,9 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
     if bed.plant_id is None:
         raise ValueError("На грядке ничего не растёт")
     if bed.is_dead:
-        raise ValueError("Растение погибло. Урожая нет.")
+        raise ValueError("Растение погибло.")
     if not bed.can_harvest:
-        raise ValueError(f"Ещё рано собирать! Нужна стадия Бутон (60%%), сейчас: {bed.stage_name} ({bed.growth_stage}%%)")
+        raise ValueError(f"Нельзя собрать! Восстановление до {format_dt(bed.recovery_until)}" if bed.recovery_until else "Ещё рано собирать!")
 
     plant = bed.plant
     result = {
@@ -120,45 +123,35 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
     else:
         main_multiplier = 1
 
-    main_count = main_multiplier  # базовое количество = 1 × множитель
-
     # === БРОСОК 2: Качество ===
     if bed.vitality >= 100:
         quality = "Искрящийся"
-        quality_mult = 2.0
     elif bed.vitality >= 80:
         quality = "Сочный"
-        quality_mult = 1.5
     elif bed.vitality >= 50:
         quality = "Обычный"
-        quality_mult = 1.0
     else:
         quality = "Увядший"
-        quality_mult = 0.5
 
-    # Находим предмет ингредиента
-    ingredient_name = f"{'Корень' if 'Мандрагора' in plant.name else 'Лепесток' if 'Лилия' in plant.name else plant.name}"
-    item = db.query(Item).filter(Item.name.contains(plant.name.split()[0])).first()
+    # Находим/создаём предмет
+    item = db.query(Item).filter(Item.name.ilike(f"%{plant.name.split()[0]}%")).first()
     if not item:
-        # Если предмет не найден — создаём временную запись (на будущее)
         item = Item(name=f"Ингредиент: {plant.name}", item_type="ingredient", rarity="common")
         db.add(item)
         db.flush()
 
-    # Добавляем в инвентарь
     inv_entry = Inventory(
         player_id=player_id,
         item_id=item.id,
-        quantity=main_count,
+        quantity=main_multiplier,
         quality=quality,
         source_bed_id=bed.id
     )
     db.add(inv_entry)
     result["main_harvest"].append({
         "name": item.name,
-        "quantity": main_count,
-        "quality": quality,
-        "quality_mult": quality_mult
+        "quantity": main_multiplier,
+        "quality": quality
     })
 
     # === БРОСОК 3: Бонусный дроп ===
@@ -172,21 +165,20 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
             for _ in range(total_bonus):
                 bonus_item = random.choices(
                     bonus_items,
-                    weights=[100 if i.rarity == "common" else 40 if i.rarity == "uncommon" else 10 if i.rarity == "rare" else 2 for i in bonus_items],
+                    weights=[100 if i.rarity == "common" else 40 if i.rarity == "uncommon" else 10 for i in bonus_items],
                     k=1
                 )[0]
                 inv_bonus = Inventory(
                     player_id=player_id,
                     item_id=bonus_item.id,
                     quantity=1,
-                    quality="Обычный",
                     source_bed_id=bed.id
                 )
                 db.add(inv_bonus)
                 result["bonus_harvest"].append({"name": bonus_item.name, "rarity": bonus_item.rarity})
 
     # === БРОСОК 4: Редкая удача ===
-    rare_chance = 1.0  # базовый 1%
+    rare_chance = 1.0
     if bed.essence >= 100:
         rare_chance += 1.0
     if bed.growth_stage >= 95:
@@ -206,12 +198,15 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
             db.add(inv_rare)
             result["rare_harvest"].append({"name": rare_item.name, "rarity": rare_item.rarity})
 
-    # Очищаем грядку после сбора
-    bed.plant_id = None
-    bed.vitality = 100
+    # === ПОСЛЕ СБОРА: растение остаётся, но страдает ===
     bed.essence = 0
-    bed.growth_stage = 0
+    bed.vitality = max(bed.vitality - 20, 0)  # -20 Живучести, но не ниже 0
+    bed.growth_stage = max(bed.growth_stage - 10, bed.plant.min_harvest_stage - 10)  # откат на 10%
+    bed.last_harvested_at = datetime.utcnow()
+    bed.recovery_until = datetime.utcnow() + timedelta(days=1)  # 1 день восстановления (потом можно на 5)
+
+    if bed.vitality <= 0:
+        bed.vitality = 0  # смерть
 
     db.commit()
     return result
-    
