@@ -11,12 +11,7 @@ class Plant(Base):
     description = Column(String, nullable=True)
     icon = Column(String, nullable=True)
 
-    # === СТАРАЯ СИСТЕМА (пока оставляем) ===
-    growth_time = Column(Integer, nullable=True)       # минуты до созревания
-    water_bonus = Column(Integer, nullable=True)       # ускорение от полива (мин)
-    base_harvest_count = Column(Integer, default=1)    # сколько плодов при сборе
-
-    # === НОВАЯ СИСТЕМА ===
+    # Параметры роста
     base_vitality = Column(Integer, default=100)       # стартовая Живучесть
     vitality_decay = Column(Integer, default=5)        # потеря Живучести в час без ухода
     essence_per_care = Column(Integer, default=12)     # +Эссенции за действие ухода

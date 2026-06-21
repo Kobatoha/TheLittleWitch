@@ -43,26 +43,45 @@ class ItemAdmin(ModelView, model=Item):
     form_columns = [Item.name, Item.description, Item.price, Item.category, Item.is_active]
 
 class PlantAdmin(ModelView, model=Plant):
-    column_list = [Plant.id, Plant.name, Plant.growth_time, Plant.water_bonus, Plant.base_harvest_count]
+    column_list = [
+        Plant.id,
+        Plant.name,
+        Plant.base_vitality,
+        Plant.essence_per_care,
+        Plant.growth_per_care,
+        Plant.min_harvest_stage,
+    ]
     column_searchable_list = [Plant.name]
-    column_sortable_list = [Plant.id, Plant.name, Plant.growth_time]
-    form_columns = [Plant.name, Plant.growth_time, Plant.water_bonus, Plant.base_harvest_count, Plant.icon, Plant.description]
+    column_sortable_list = [Plant.id, Plant.name, Plant.base_vitality, Plant.growth_per_care]
+    form_columns = [
+        Plant.name,
+        Plant.description,
+        Plant.icon,
+        Plant.base_vitality,
+        Plant.vitality_decay,
+        Plant.essence_per_care,
+        Plant.growth_per_care,
+        Plant.min_harvest_stage,
+        Plant.base_potency,
+    ]
     name = "Растение"
     name_plural = "Растения"
 
 class GardenBedAdmin(ModelView, model=GardenBed):
     column_list = [
-        GardenBed.id, 
-        GardenBed.player_id, 
-        GardenBed.plant_id, 
-        GardenBed.planted_at, 
-        GardenBed.ready_at, 
-        GardenBed.moisture,
+        GardenBed.id,
+        GardenBed.player_id,
+        GardenBed.plant_id,
+        GardenBed.growth_stage,
+        GardenBed.vitality,
+        GardenBed.essence,
+        GardenBed.planted_at,
     ]
     column_sortable_list = [
-        GardenBed.id, 
-        GardenBed.planted_at, 
-        GardenBed.ready_at
+        GardenBed.id,
+        GardenBed.growth_stage,
+        GardenBed.vitality,
+        GardenBed.planted_at,
     ]
     name = "Грядка"
     name_plural = "Грядки"

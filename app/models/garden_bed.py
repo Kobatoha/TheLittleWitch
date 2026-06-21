@@ -11,17 +11,12 @@ class GardenBed(Base):
     player_id = Column(Integer, ForeignKey("players.id"), nullable=False)
     plant_id = Column(Integer, ForeignKey("plants.id"), nullable=True)
 
-    # === СТАРАЯ СИСТЕМА ===
-    moisture = Column(Integer, default=50)
-    times_watered = Column(Integer, default=0)
-    planted_at = Column(DateTime, nullable=True)
-    ready_at = Column(DateTime, nullable=True)
-
-    # === НОВАЯ СИСТЕМА ===
+    # Новая система роста
     vitality = Column(Integer, default=100)            # Живучесть (0 = смерть)
     essence = Column(Integer, default=0)               # Эссенция (растёт от ухода)
     growth_stage = Column(Integer, default=0)          # Цикл Роста: 0-100
 
+    planted_at = Column(DateTime, server_default=func.now())  # когда посадили (для истории)
     created_at = Column(DateTime, server_default=func.now())
 
     player = relationship("Player", back_populates="garden_beds")
@@ -29,7 +24,6 @@ class GardenBed(Base):
 
     @property
     def stage_name(self) -> str:
-        """Человеческое название стадии роста."""
         stages = [
             (0, "Семя"),
             (20, "Росток"),
@@ -49,7 +43,7 @@ class GardenBed(Base):
 
     @property
     def can_harvest(self) -> bool:
-        return self.growth_stage >= 60 and not self.is_dead
+        return self.growth_stage >= self.plant.min_harvest_stage if self.plant else False
 
     @property
     def plant_name(self) -> str:
