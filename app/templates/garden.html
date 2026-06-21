@@ -121,7 +121,7 @@
                 }
                 const data = await response.json();
                 msg.className = "success";
-                msg.textContent = `💧 Полито! Стадия: ${data.stage_name}, Эссенция: ${data.essence}, Энергия: ${data.energy_left}`;
+                msg.textContent = `💧 Полито! Стадия: ${data.stage_name}, Эссенция: ${data.essence}`;
                 setTimeout(() => location.reload(), 800);
             } catch (e) {
                 msg.className = "error";

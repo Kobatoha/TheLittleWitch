@@ -68,15 +68,13 @@ def plant_seed(request: PlantRequest, db: Session = Depends(get_db)):
 def water_bed(request: WaterRequest, db: Session = Depends(get_db)):
     try:
         bed = services.water_bed(db, TEMP_PLAYER_ID, request.bed_id)
-        player = db.query(Player).filter(Player.id == TEMP_PLAYER_ID).first()
         return {
             "ok": True,
             "plant_name": bed.plant_name,
             "vitality": bed.vitality,
             "essence": bed.essence,
             "growth_stage": bed.growth_stage,
-            "stage_name": bed.stage_name,
-            "energy_left": player.energy
+            "stage_name": bed.stage_name
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
