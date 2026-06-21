@@ -1,8 +1,8 @@
-"""init all tables
+"""new growth system vitality essence growth_stage
 
-Revision ID: 326bc2dace84
+Revision ID: 662b4c8e8b0b
 Revises: 
-Create Date: 2026-06-21 17:23:11.563115
+Create Date: 2026-06-21 20:27:08.074917
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '326bc2dace84'
+revision: str = '662b4c8e8b0b'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -31,11 +31,17 @@ def upgrade() -> None:
     op.create_table('plants',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
-    sa.Column('growth_time', sa.Integer(), nullable=False),
+    sa.Column('description', sa.String(), nullable=True),
+    sa.Column('icon', sa.String(), nullable=True),
+    sa.Column('growth_time', sa.Integer(), nullable=True),
     sa.Column('water_bonus', sa.Integer(), nullable=True),
     sa.Column('base_harvest_count', sa.Integer(), nullable=True),
-    sa.Column('icon', sa.String(), nullable=True),
-    sa.Column('description', sa.String(), nullable=True),
+    sa.Column('base_vitality', sa.Integer(), nullable=True),
+    sa.Column('vitality_decay', sa.Integer(), nullable=True),
+    sa.Column('essence_per_care', sa.Integer(), nullable=True),
+    sa.Column('growth_per_care', sa.Integer(), nullable=True),
+    sa.Column('min_harvest_stage', sa.Integer(), nullable=True),
+    sa.Column('base_potency', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
     )
@@ -84,10 +90,13 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('player_id', sa.Integer(), nullable=False),
     sa.Column('plant_id', sa.Integer(), nullable=True),
-    sa.Column('planted_at', sa.DateTime(), nullable=True),
-    sa.Column('ready_at', sa.DateTime(), nullable=True),
     sa.Column('moisture', sa.Integer(), nullable=True),
     sa.Column('times_watered', sa.Integer(), nullable=True),
+    sa.Column('planted_at', sa.DateTime(), nullable=True),
+    sa.Column('ready_at', sa.DateTime(), nullable=True),
+    sa.Column('vitality', sa.Integer(), nullable=True),
+    sa.Column('essence', sa.Integer(), nullable=True),
+    sa.Column('growth_stage', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.ForeignKeyConstraint(['plant_id'], ['plants.id'], ),
     sa.ForeignKeyConstraint(['player_id'], ['players.id'], ),

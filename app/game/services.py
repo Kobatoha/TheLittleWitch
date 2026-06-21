@@ -124,4 +124,50 @@ def water_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     db.commit()
     db.refresh(bed)
     return bed
-    
+
+# === НОВЫЙ ПОЛИВ (система Живучесть/Эссенция/Цикл) ===
+
+def water_bed_new(db: Session, player_id: int, bed_id: int) -> GardenBed:
+    """Полив по новой системе: +Эссенция, +Цикл Роста, +Живучесть."""
+    player = db.query(Player).filter(Player.id == player_id).first()
+    if not player:
+        raise ValueError("Игрок не найден")
+    if player.energy < WATER_COST_ENERGY:
+        raise ValueError(f"Недостаточно энергии! Нужно {WATER_COST_ENERGY}, у тебя {player.energy}")
+
+    bed = db.query(GardenBed).filter(
+        GardenBed.id == bed_id,
+        GardenBed.player_id == player_id
+    ).first()
+    if not bed:
+        raise ValueError("Грядка не найдена")
+    if bed.plant_id is None:
+        raise ValueError("На грядке ничего не растёт")
+    if bed.is_dead:
+        raise ValueError("Растение погибло. Удали его и посади новое.")
+    if bed.growth_stage >= 100:
+        raise ValueError("Растение уже достигло Зрелости! Собирай урожай.")
+
+    plant = bed.plant
+
+    # Тратим энергию
+    player.energy -= WATER_COST_ENERGY
+
+    # Повышаем Живучесть (но не выше базовой)
+    bed.vitality = min(bed.vitality + 15, plant.base_vitality)
+
+    # Повышаем Эссенцию
+    bed.essence += plant.essence_per_care
+
+    # Продвигаем Цикл Роста
+    bed.growth_stage = min(bed.growth_stage + plant.growth_per_care, 100)
+
+    # Старую систему тоже обновляем (для совместимости)
+    bed.moisture = min(bed.moisture + 30, 100)
+    bed.times_watered += 1
+    if bed.ready_at:
+        bed.ready_at = bed.ready_at - __import__("datetime").timedelta(minutes=plant.water_bonus)
+
+    db.commit()
+    db.refresh(bed)
+    return bed

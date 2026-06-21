@@ -27,43 +27,24 @@ def format_dt(dt) -> str:
         return "—"
     return dt.strftime("%d.%m.%Y %H:%M")
 
-@router.get("/garden", response_model=list[schemas.GardenBedOut])
-def get_garden(db: Session = Depends(get_db)):
-    beds = services.get_player_garden(db, TEMP_PLAYER_ID)
-    result = []
-    for bed in beds:
-        result.append(bed_to_dict(bed))
-    return result
+def _is_ready(bed) -> bool:
+    return bool(bed.ready_at and bed.ready_at <= datetime.utcnow())
 
-@router.post("/garden/plant", response_model=schemas.GardenBedOut)
-def plant_seed(request: schemas.PlantRequest, db: Session = Depends(get_db)):
-    try:
-        bed = services.plant_seed(db, TEMP_PLAYER_ID, request.plant_id)
-        return bed_to_dict(bed)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
-templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
+def bed_to_api(bed) -> schemas.GardenBedOut:
+    return schemas.GardenBedOut(
+        id=bed.id,
+        plant_name=bed.plant.name if bed.plant else None,
+        planted_at=bed.planted_at,
+        ready_at=bed.ready_at,
+        moisture=bed.moisture,
+        is_ready=_is_ready(bed),
+    )
 
-@router.get("/garden/page", response_class=HTMLResponse)
-def garden_page(request: Request, db: Session = Depends(get_db)):
-    beds = services.get_player_garden(db, TEMP_PLAYER_ID)
-    plants = db.query(Plant).all()
 
-    beds_out = []
-    for bed in beds:
-        beds_out.append(bed_to_dict(bed))
+def bed_to_template(bed):
+    is_ready = _is_ready(bed)
 
-    return templates.TemplateResponse("garden.html", {
-        "request": request,
-        "beds": beds_out,
-        "plants": plants
-    })
-
-def bed_to_dict(bed):
-    is_ready = bed.ready_at and bed.ready_at <= datetime.utcnow()
-
-    # Сколько минут осталось
     if bed.ready_at and not is_ready:
         delta = bed.ready_at - datetime.utcnow()
         minutes_left = int(delta.total_seconds() / 60)
@@ -82,24 +63,63 @@ def bed_to_dict(bed):
 
     return {
         "id": bed.id,
-        "plant_name": bed.plant.name if bed.plant else None,
+        "plant_name": bed.plant_name,
         "planted_at": format_dt(bed.planted_at),
         "ready_at": format_dt(bed.ready_at),
         "time_left": time_left,
         "moisture": bed.moisture,
+        "vitality": bed.vitality,
+        "essence": bed.essence,
+        "growth_stage": bed.growth_stage,
+        "stage_name": bed.stage_name,
+        "is_dead": bed.is_dead,
+        "can_harvest": bed.can_harvest,
         "is_ready": is_ready,
     }
+
+
+@router.get("/garden", response_model=list[schemas.GardenBedOut])
+def get_garden(db: Session = Depends(get_db)):
+    beds = services.get_player_garden(db, TEMP_PLAYER_ID)
+    return [bed_to_api(bed) for bed in beds]
+
+
+@router.post("/garden/plant", response_model=schemas.GardenBedOut)
+def plant_seed(request: schemas.PlantRequest, db: Session = Depends(get_db)):
+    try:
+        bed = services.plant_seed(db, TEMP_PLAYER_ID, request.plant_id)
+        return bed_to_api(bed)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
+
+@router.get("/garden/page", response_class=HTMLResponse)
+def garden_page(request: Request, db: Session = Depends(get_db)):
+    beds = services.get_player_garden(db, TEMP_PLAYER_ID)
+    plants = db.query(Plant).all()
+
+    beds_out = [bed_to_template(bed) for bed in beds]
+
+    return templates.TemplateResponse("garden.html", {
+        "request": request,
+        "beds": beds_out,
+        "plants": plants
+    })
 
 @router.post("/garden/water")
 def water_bed(request: WaterRequest, db: Session = Depends(get_db)):
     try:
-        bed = services.water_bed(db, TEMP_PLAYER_ID, request.bed_id)
+        bed = services.water_bed_new(db, TEMP_PLAYER_ID, request.bed_id)
+        player = db.query(Player).filter(Player.id == TEMP_PLAYER_ID).first()
         return {
             "ok": True,
             "plant_name": bed.plant.name if bed.plant else "?",
-            "moisture": bed.moisture,
-            "ready_at": bed.ready_at,
-            "energy_left": db.query(Player).filter(Player.id == TEMP_PLAYER_ID).first().energy
+            "vitality": bed.vitality,
+            "essence": bed.essence,
+            "growth_stage": bed.growth_stage,
+            "stage_name": bed.stage_name,
+            "energy_left": player.energy
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
