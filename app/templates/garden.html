@@ -53,21 +53,23 @@
                 🌿 Стадия: <strong>{{ bed.stage_name }}</strong> ({{ bed.growth_stage }}%)<br>
                 ❤️ Живучесть: {{ bed.vitality }}%<br>
                 ✨ Эссенция: {{ bed.essence }}<br>
+
                 {% if bed.is_dead %}
                     💀 <strong>Погибло</strong>
                 {% elif bed.recovery_until and bed.recovery_until > now %}
-                    💤 Восстановление до {{ bed.recovery_until }}
-                {% elif bed.can_harvest %}
-                    ✅ <strong>Можно собирать!</strong>
-                    <br>
-                    <button onclick="harvestBed('{{ bed.id }}')">🧺 Собрать урожай</button>
-                    {% if bed.can_water %}
-                        <button onclick="waterBed('{{ bed.id }}')">💧 Полить</button>
-                    {% endif %}
-                {% elif bed.can_water %}
-                    <button onclick="waterBed('{{ bed.id }}')">💧 Полить</button>
+                    💤 Восстановление до {{ bed.recovery_until_str }}
                 {% else %}
-                    ⏳ Полив использован. Жди нового дня или используй Искру Роста.
+                    {% if bed.can_water %}
+                        <button onclick="waterBed({{ bed.id }})">💧 Полить</button>
+                    {% else %}
+                        <button disabled style="background:#555; cursor:not-allowed;">💧 Полить</button>
+                    {% endif %}
+
+                    <button onclick="useSpark({{ bed.id }})">⚡ Искра Роста</button>
+
+                    {% if bed.can_harvest %}
+                        <button onclick="harvestBed({{ bed.id }})">🧺 Собрать урожай</button>
+                    {% endif %}
                 {% endif %}
             {% endif %}
         </div>
@@ -162,6 +164,34 @@
                 msg.className = "success";
                 msg.innerHTML = `🧺 Собрано! ${mainInfo}${bonusInfo}${rareInfo}`;
                 setTimeout(() => location.reload(), 5000);  // 4 секунды, чтобы прочитать
+            } catch (e) {
+                msg.className = "error";
+                msg.textContent = "❌ Ошибка соединения";
+            }
+        }
+        async function useSpark(bedId) {
+            const msg = document.getElementById("message");
+            msg.className = "";
+            msg.textContent = "Применяем Искру Роста...";
+
+            try {
+                const response = await fetch("/api/game/garden/use-spark", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ bed_id: bedId })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    msg.className = "error";
+                    msg.textContent = "❌ " + (error.detail || "Ошибка сервера");
+                    return;
+                }
+
+                const data = await response.json();
+                msg.className = "success";
+                msg.textContent = `⚡ Искра Роста! Стадия: ${data.stage_name} (${data.growth_stage}%)`;
+                setTimeout(() => location.reload(), 1500);
             } catch (e) {
                 msg.className = "error";
                 msg.textContent = "❌ Ошибка соединения";

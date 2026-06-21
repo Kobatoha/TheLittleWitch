@@ -13,6 +13,8 @@ from app.core.config import TEMP_PLAYER_ID
 from app.game import services
 from app.models.plant import Plant
 from app.models.player import Player
+from app.models.item import Item
+from app.models.inventory import Inventory
 
 
 router = APIRouter()
@@ -26,6 +28,10 @@ class PlantRequest(BaseModel):
 class HarvestRequest(BaseModel):
     bed_id: int
 
+class UseItemRequest(BaseModel):
+    bed_id: int
+
+
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
 
 
@@ -36,7 +42,6 @@ def format_dt(dt) -> str:
 
 
 def bed_to_dict(bed):
-    """Превращает GardenBed в словарь для API и шаблонов."""
     return {
         "id": bed.id,
         "plant_name": bed.plant_name,
@@ -45,10 +50,12 @@ def bed_to_dict(bed):
         "growth_stage": bed.growth_stage,
         "stage_name": bed.stage_name,
         "is_dead": bed.is_dead,
+        "can_water": bed.can_water,
         "can_harvest": bed.can_harvest,
+        "recovery_until": bed.recovery_until,  # ← сырой datetime для сравнения в шаблоне
+        "recovery_until_str": format_dt(bed.recovery_until) if bed.recovery_until else None,  # ← для показа
         "planted_at": format_dt(bed.planted_at),
     }
-
 
 # === API ===
 
@@ -103,5 +110,20 @@ def harvest_bed(request: HarvestRequest, db: Session = Depends(get_db)):
     try:
         result = services.harvest_bed(db, TEMP_PLAYER_ID, request.bed_id)
         return {"ok": True, **result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/garden/use-spark")
+def use_growth_spark(request: UseItemRequest, db: Session = Depends(get_db)):
+    try:
+        bed = services.use_growth_spark(db, TEMP_PLAYER_ID, request.bed_id)
+        return {
+            "ok": True,
+            "plant_name": bed.plant_name,
+            "growth_stage": bed.growth_stage,
+            "stage_name": bed.stage_name,
+            "essence": bed.essence,
+            "can_water": bed.can_water
+        }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

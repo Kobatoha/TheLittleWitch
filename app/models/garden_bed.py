@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -55,21 +57,16 @@ class GardenBed(Base):
 
     @property
     def can_water(self) -> bool:
-        """Можно ли поливать: не умерло, не в зрелости, не на восстановлении, полив не использован сегодня."""
         if self.is_dead:
             return False
         if self.plant_id is None:
             return False
-        if self.growth_stage >= 100:
+        if self.growth_stage >= 100:  # Зрелость — поливать нельзя
             return False
         if self.recovery_until and self.recovery_until > datetime.utcnow():
             return False
-        # Проверка дневного лимита
         if self.last_watered_at:
-            last_watered_date = self.last_watered_at.date()
-            today = datetime.utcnow().date()
-            if last_watered_date >= today:
-                return False
+            return self.last_watered_at.date() < datetime.utcnow().date()
         return True
 
     @property

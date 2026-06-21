@@ -83,7 +83,6 @@ def water_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     # Восстановление живучести
     bed.vitality = min(bed.vitality + 15, plant.base_vitality)
     bed.essence += plant.essence_per_care
-    bed.growth_stage = min(bed.growth_stage + plant.growth_per_care, 100)
     bed.last_watered_at = datetime.utcnow()
 
     db.commit()
@@ -210,3 +209,58 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
 
     db.commit()
     return result
+
+def use_growth_spark(db: Session, player_id: int, bed_id: int) -> GardenBed:
+    bed = db.query(GardenBed).filter(
+        GardenBed.id == bed_id,
+        GardenBed.player_id == player_id
+    ).first()
+    if not bed:
+        raise ValueError("Грядка не найдена")
+    if bed.plant_id is None:
+        raise ValueError("На грядке ничего не растёт")
+    if bed.is_dead:
+        raise ValueError("Растение погибло")
+    if bed.growth_stage >= 100:
+        raise ValueError("Растение уже в Зрелости!")
+
+    spark_item = db.query(Item).filter(Item.name == "Искра Роста").first()
+    if not spark_item:
+        raise ValueError("Предмет 'Искра Роста' не найден в БД")
+
+    inv = db.query(Inventory).filter(
+        Inventory.player_id == player_id,
+        Inventory.item_id == spark_item.id,
+        Inventory.quantity > 0
+    ).first()
+    if not inv:
+        raise ValueError("У тебя нет Искры Роста!")
+
+    # Тратим Искру
+    inv.quantity -= 1
+    if inv.quantity <= 0:
+        db.delete(inv)
+
+    # Сбрасываем дневной лимит полива
+    bed.last_watered_at = None
+    bed.recovery_until = None
+
+    # Рост: +4% к стадии
+    bed.growth_stage = min(bed.growth_stage + 4, 100)
+
+    # Живучесть падает на 5% (ночной стресс)
+    bed.vitality = max(bed.vitality - 5, 0)
+
+    # Эссенция: если вчера поливали — не падает, иначе -20%
+    yesterday = datetime.utcnow().date() - timedelta(days=1)
+    if bed.last_watered_at and bed.last_watered_at.date() >= yesterday:
+        pass  # эссенция не падает
+    else:
+        bed.essence = max(bed.essence - int(bed.essence * 0.2), 0)
+
+    if bed.vitality <= 0:
+        bed.vitality = 0
+
+    db.commit()
+    db.refresh(bed)
+    return bed
