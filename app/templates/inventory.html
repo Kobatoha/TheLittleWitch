@@ -2,170 +2,370 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Инвентарь ведьмочки</title>
     <style>
+        :root {
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --border: #2a2a4a;
+            --text: #e0d8f0;
+            --muted: #7a7a9e;
+            --accent: #c9b1ff;
+            --gold: #ffd700;
+            --cell-bg: #1e1e3a;
+            --cell-hover: #2a2a50;
+            --cell-active: #3a2a60;
+            --detail-bg: #111128;
+            --rarity-common: #999;
+            --rarity-uncommon: #7fdb7f;
+            --rarity-rare: #4da6ff;
+            --rarity-epic: #c44dff;
+            --rarity-legendary: #ffd700;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: sans-serif;
-            background: #1a1a2e;
-            color: #eee;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
             padding: 20px;
-            max-width: 600px;
+        }
+
+        .container {
+            max-width: 900px;
             margin: 0 auto;
         }
-        h1 { color: #c9b1ff; }
-        h2 {
-            color: #a0d2db;
-            border-bottom: 1px solid #333;
-            padding-bottom: 5px;
-            margin-top: 25px;
-        }
-        .item {
-            background: #16213e;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 12px;
-            margin: 8px 0;
+
+        /* Шапка */
+        .header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        .item-info {
-            flex: 1;
-        }
-        .item-name {
-            font-weight: bold;
-            font-size: 16px;
-        }
-        .item-detail {
+        .header h1 { color: var(--accent); font-size: 24px; }
+        .header a { color: var(--accent); text-decoration: none; font-size: 14px; }
+        .header a:hover { text-decoration: underline; }
+        .stats {
+            display: flex;
+            gap: 15px;
             font-size: 13px;
-            color: #999;
-            margin-top: 3px;
+            color: var(--muted);
         }
-        .item-count {
-            font-size: 18px;
-            font-weight: bold;
-            color: #c9b1ff;
-            min-width: 40px;
+        .stats span { background: var(--card-bg); padding: 4px 10px; border-radius: 10px; }
+
+        /* Основная панель */
+        .main-panel {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        @media (max-width: 650px) {
+            .main-panel { flex-direction: column; }
+        }
+
+        /* Сетка инвентаря */
+        .inv-grid-container {
+            flex: 1 1 60%;
+            min-width: 280px;
+        }
+        .inv-section {
+            margin-bottom: 24px;
+        }
+        .inv-section h2 {
+            font-size: 16px;
+            color: #a0d2db;
+            border-bottom: 1px solid #2a2a4a;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .inv-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 8px;
+        }
+
+        /* Ячейка предмета */
+        .inv-cell {
+            aspect-ratio: 1 / 1;
+            background: var(--cell-bg);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            font-size: 24px;
+            user-select: none;
+        }
+        .inv-cell:hover {
+            background: var(--cell-hover);
+            border-color: #5a5a80;
+            transform: translateY(-2px);
+        }
+        .inv-cell.active {
+            background: var(--cell-active);
+            border-color: var(--accent);
+            box-shadow: 0 0 12px rgba(201, 177, 255, 0.3);
+        }
+        .inv-cell .quantity {
+            position: absolute;
+            bottom: 4px;
+            right: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            background: rgba(0,0,0,0.6);
+            padding: 1px 5px;
+            border-radius: 6px;
+        }
+        .inv-cell .quality-dot {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .quality-Увядший { background: #888; }
+        .quality-Обычный { background: #aaa; }
+        .quality-Сочный { background: #7fdb7f; }
+        .quality-Искрящийся { background: #ffd700; box-shadow: 0 0 6px #ffd700; }
+        .quality-Редкий { background: #ff6b9d; }
+
+        /* Границы редкости */
+        .rarity-common { border-color: #444; }
+        .rarity-uncommon { border-color: #3a6030; }
+        .rarity-rare { border-color: #305080; }
+        .rarity-epic { border-color: #603080; }
+        .rarity-legendary { border-color: #806030; }
+
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            color: #fff;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .inv-cell:hover .tooltip { display: block; }
+
+        /* Панель деталей */
+        .detail-panel {
+            flex: 0 0 280px;
+            background: var(--detail-bg);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            min-height: 300px;
+            position: sticky;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
         }
-        .quality-Увядший { color: #999; }
-        .quality-Обычный { color: #ccc; }
-        .quality-Сочный { color: #7fdb7f; }
-        .quality-Искрящийся { color: #ffd700; }
-        .quality-Редкий { color: #ff6b9d; }
-
-        .rarity-common { border-left: 3px solid #999; }
-        .rarity-uncommon { border-left: 3px solid #7fdb7f; }
-        .rarity-rare { border-left: 3px solid #4da6ff; }
-        .rarity-epic { border-left: 3px solid #c44dff; }
-        .rarity-legendary { border-left: 3px solid #ffd700; }
-
-        .empty { color: #666; font-style: italic; padding: 15px; }
-        .nav { margin-bottom: 20px; }
-        .nav a {
-            color: #c9b1ff;
-            text-decoration: none;
-            font-size: 14px;
+        @media (max-width: 650px) {
+            .detail-panel {
+                flex: 0 0 auto;
+                width: 100%;
+                position: static;
+                min-height: 200px;
+            }
         }
-        .nav a:hover { text-decoration: underline; }
-        .stats {
-            background: #16213e;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 20px;
+        .detail-placeholder {
+            color: #3a3a5a;
+            font-size: 40px;
+        }
+        .detail-placeholder p {
+            font-size: 13px;
+            margin-top: 8px;
+            color: #555;
+        }
+        .detail-icon {
+            font-size: 56px;
+            margin-bottom: 12px;
+        }
+        .detail-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 6px;
+        }
+        .detail-quality {
             font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .detail-type {
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .detail-desc {
+            font-size: 13px;
             color: #999;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        .detail-meta {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
         }
     </style>
 </head>
 <body>
-    <div class="nav">
-        <a href="/api/game/garden/page">← Вернуться в сад</a>
+    <div class="container">
+        <!-- Шапка -->
+        <div class="header">
+            <div>
+                <h1>🎒 Инвентарь ведьмочки</h1>
+                <a href="/api/game/garden/page">← Вернуться в сад</a>
+            </div>
+            <div class="stats">
+                <span>📦 {{ total_items }} предметов</span>
+                <span>⚡ {{ spark_count }} Искр</span>
+            </div>
+        </div>
+
+        <!-- Основная панель -->
+        <div class="main-panel">
+            <!-- Сетка инвентаря -->
+            <div class="inv-grid-container">
+                {% macro render_grid(items, section_title) %}
+                {% if items %}
+                <div class="inv-section">
+                    <h2>{{ section_title }}</h2>
+                    <div class="inv-grid">
+                        {% for item in items %}
+                        <div class="inv-cell rarity-{{ item.rarity }}"
+                             onclick='selectItem({{ item | tojson | safe }})'
+                             id="cell-{{ item.id }}">
+                            <span class="tooltip">{{ item.item_name }}</span>
+                            <span>
+                                {% if item.item_type == "ingredient" %}🌿
+                                {% elif item.item_type == "bonus" %}🎁
+                                {% elif item.item_type == "rare" %}🌟
+                                {% elif item.item_type == "consumable" %}⚡
+                                {% else %}📦
+                                {% endif %}
+                            </span>
+                            <span class="quantity">{{ item.quantity }}</span>
+                            {% if item.quality and item.quality != "Обычный" %}
+                            <span class="quality-dot quality-{{ item.quality }}"></span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endmacro %}
+
+                {{ render_grid(ingredients, "🌿 Ингредиенты") }}
+                {{ render_grid(bonuses, "🎁 Бонусные предметы") }}
+                {{ render_grid(consumables, "⚡ Расходные предметы") }}
+                {{ render_grid(rares, "🌟 Редкая удача") }}
+
+                {% if total_items == 0 %}
+                <div style="text-align:center; color:#666; padding:40px;">
+                    <div style="font-size:48px;">🎒</div>
+                    <p>Инвентарь пуст. Вырасти что-нибудь в саду!</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Панель деталей -->
+            <div class="detail-panel" id="detailPanel">
+                <div class="detail-placeholder" id="detailPlaceholder">
+                    <span>🔍</span>
+                    <p>Нажми на предмет, чтобы увидеть детали</p>
+                </div>
+                <div id="detailContent" style="display:none; width:100%;">
+                    <div class="detail-icon" id="detailIcon"></div>
+                    <div class="detail-name" id="detailName"></div>
+                    <div class="detail-quality" id="detailQuality"></div>
+                    <div class="detail-type" id="detailType"></div>
+                    <div class="detail-desc" id="detailDesc"></div>
+                    <div class="detail-meta" id="detailMeta"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <h1>🎒 Инвентарь ведьмочки</h1>
+    <script>
+        let selectedItemId = null;
 
-    <div class="stats">
-        Всего предметов: {{ total_items }} | ⚡ Искр Роста: {{ spark_count }}
-    </div>
+        function selectItem(item) {
+            // Снимаем выделение с предыдущего
+            if (selectedItemId) {
+                const prev = document.getElementById("cell-" + selectedItemId);
+                if (prev) prev.classList.remove("active");
+            }
 
-    <!-- Ингредиенты -->
-    <h2>🌿 Ингредиенты</h2>
-    {% if ingredients %}
-        {% for item in ingredients %}
-        <div class="item rarity-{{ item.rarity }}">
-            <div class="item-info">
-                <div class="item-name">{{ item.item_name }}</div>
-                <div class="item-detail">
-                    <span class="quality-{{ item.quality }}">{{ item.quality }}</span>
-                    {% if item.description %} • {{ item.description }}{% endif %}
-                </div>
-            </div>
-            <div class="item-count">{{ item.quantity }}x</div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="empty">Пока пусто. Вырасти что-нибудь в саду!</div>
-    {% endif %}
+            // Выделяем новый
+            const cell = document.getElementById("cell-" + item.id);
+            if (cell) cell.classList.add("active");
+            selectedItemId = item.id;
 
-    <!-- Бонусы -->
-    <h2>🎁 Бонусные предметы</h2>
-    {% if bonuses %}
-        {% for item in bonuses %}
-        <div class="item rarity-{{ item.rarity }}">
-            <div class="item-info">
-                <div class="item-name">{{ item.item_name }}</div>
-                <div class="item-detail">
-                    {{ item.rarity | capitalize }}
-                    {% if item.description %} • {{ item.description }}{% endif %}
-                </div>
-            </div>
-            <div class="item-count">{{ item.quantity }}x</div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="empty">Бонусы выпадают при сборе урожая. Чем выше Эссенция — тем больше!</div>
-    {% endif %}
+            // Показываем детали
+            document.getElementById("detailPlaceholder").style.display = "none";
+            const content = document.getElementById("detailContent");
+            content.style.display = "block";
 
-    <!-- Расходники -->
-    <h2>⚡ Расходные предметы</h2>
-    {% if consumables %}
-        {% for item in consumables %}
-        <div class="item rarity-{{ item.rarity }}">
-            <div class="item-info">
-                <div class="item-name">{{ item.item_name }}</div>
-                <div class="item-detail">
-                    {% if item.description %}{{ item.description }}{% endif %}
-                </div>
-            </div>
-            <div class="item-count">{{ item.quantity }}x</div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="empty">Здесь будут Искры Роста и другие полезные предметы.</div>
-    {% endif %}
+            // Иконка
+            const icons = {
+                "ingredient": "🌿",
+                "bonus": "🎁",
+                "rare": "🌟",
+                "consumable": "⚡"
+            };
+            document.getElementById("detailIcon").textContent = icons[item.item_type] || "📦";
 
-    <!-- Редкие находки -->
-    <h2>🌟 Редкая удача</h2>
-    {% if rares %}
-        {% for item in rares %}
-        <div class="item rarity-{{ item.rarity }}">
-            <div class="item-info">
-                <div class="item-name">{{ item.item_name }}</div>
-                <div class="item-detail">
-                    {{ item.rarity | capitalize }}
-                    {% if item.description %} • {{ item.description }}{% endif %}
-                </div>
-            </div>
-            <div class="item-count">{{ item.quantity }}x</div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="empty">Здесь появятся самые редкие находки. Шанс выпадения: 1-3%</div>
-    {% endif %}
+            document.getElementById("detailName").textContent = item.item_name;
+            document.getElementById("detailQuality").textContent = "Качество: " + (item.quality || "Обычный");
+            document.getElementById("detailQuality").className = "detail-quality quality-" + (item.quality || "Обычный");
 
-    <div class="nav" style="margin-top: 25px;">
-        <a href="/api/game/garden/page">← Вернуться в сад</a>
-    </div>
+            const typeNames = {
+                "ingredient": "Ингредиент",
+                "bonus": "Бонусный предмет",
+                "rare": "Редкая находка",
+                "consumable": "Расходный предмет"
+            };
+            document.getElementById("detailType").textContent = typeNames[item.item_type] || item.item_type;
+
+            document.getElementById("detailDesc").textContent = item.description || "Без описания";
+
+            const rarityNames = {
+                "common": "Обычный",
+                "uncommon": "Необычный",
+                "rare": "Редкий",
+                "epic": "Эпический",
+                "legendary": "Легендарный"
+            };
+            document.getElementById("detailMeta").textContent =
+                "Редкость: " + (rarityNames[item.rarity] || item.rarity) +
+                " • Количество: " + item.quantity +
+                (item.created_at ? " • Получено: " + item.created_at : "");
+        }
+    </script>
 </body>
 </html>

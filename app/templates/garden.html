@@ -2,208 +2,422 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ведьмин Сад</title>
     <style>
+        :root {
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --border: #2a2a4a;
+            --text: #e0d8f0;
+            --muted: #7a7a9e;
+            --accent: #c9b1ff;
+            --hp-color: #e06060;
+            --essence-color: #60c0e0;
+            --growth-color: #60e090;
+            --btn-bg: #2d1b3e;
+            --btn-hover: #4a2a5e;
+            --btn-disabled: #2a2a3a;
+            --gold: #ffd700;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: sans-serif;
-            background: #1a1a2e;
-            color: #eee;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
             padding: 20px;
-            max-width: 500px;
+        }
+
+        .container {
+            max-width: 800px;
             margin: 0 auto;
         }
-        .bed {
-            border: 2px solid #444;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 10px 0;
-            background: #16213e;
+
+        h1 {
+            color: var(--accent);
+            font-size: 24px;
+            margin-bottom: 8px;
         }
-        .empty { color: #666; }
-        .ready { border-color: #6f6; }
-        .growing { border-color: #aa6; }
-        .dead { border-color: #600; background: #2a1111; }
-        button {
-            background: #7b2d8e;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
+
+        .nav {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .nav a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .nav a:hover { text-decoration: underline; }
+        .spark-badge {
+            background: #2d1b3e;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #e0c0ff;
+        }
+
+        /* Сетка грядок */
+        .garden-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 500px) {
+            .garden-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Карточка грядки */
+        .bed-card {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            aspect-ratio: 1 / 1;
+            min-height: 280px;
+            transition: border-color 0.3s;
+        }
+        .bed-card.ready { border-color: #60e090; }
+        .bed-card.dead { border-color: #603030; background: #1a1018; }
+        .bed-card.empty { border-style: dashed; border-color: #2a2a3a; }
+
+        .plant-icon {
+            font-size: 32px;
+            text-align: center;
+            line-height: 1;
+        }
+        .plant-name {
+            font-weight: 700;
+            font-size: 15px;
+            text-align: center;
+            color: var(--accent);
+        }
+        .stage-label {
+            text-align: center;
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Полоски-бары */
+        .bars {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            justify-content: center;
+        }
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        .bar-icon { width: 18px; text-align: center; flex-shrink: 0; }
+        .bar-track {
+            flex: 1;
+            height: 12px;
+            background: #1a1a30;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #2a2a40;
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+        .bar-fill.hp { background: linear-gradient(90deg, #c04040, var(--hp-color)); }
+        .bar-fill.essence { background: linear-gradient(90deg, #4080c0, var(--essence-color)); }
+        .bar-fill.growth { background: linear-gradient(90deg, #40a050, var(--growth-color)); }
+        .bar-value {
+            width: 32px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 11px;
+            flex-shrink: 0;
+            color: var(--muted);
+        }
+
+        /* Кнопки */
+        .btn-row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+        }
+        .btn {
+            flex: 1;
+            padding: 8px 4px;
+            border: 1px solid #3a2a50;
+            border-radius: 10px;
+            background: var(--btn-bg);
+            color: var(--text);
             cursor: pointer;
             font-size: 14px;
-            margin-top: 8px;
+            transition: all 0.2s;
+            text-align: center;
+            white-space: nowrap;
         }
-        button:hover { background: #9b3db0; }
-        select {
-            padding: 8px;
-            border-radius: 5px;
+        .btn:hover { background: var(--btn-hover); border-color: #5a4a70; }
+        .btn:disabled {
+            background: var(--btn-disabled);
+            color: #555;
+            cursor: not-allowed;
+            border-color: #2a2a30;
+        }
+        .btn.harvest { border-color: #3a6030; }
+        .btn.harvest:hover { background: #1a3020; border-color: #4a8040; }
+
+        /* Пустая грядка */
+        .empty-text {
+            color: var(--muted);
+            text-align: center;
+            font-style: italic;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Сообщение */
+        #message {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            min-height: 22px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .msg-success { color: #7fdb7f; background: #0f1f0f; }
+        .msg-error { color: #f66; background: #1f0f0f; }
+
+        /* Посадка */
+        .plant-section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            border: 2px solid var(--border);
+        }
+        .plant-section h2 { font-size: 18px; margin-bottom: 12px; color: var(--accent); }
+        .plant-form {
+            display: flex;
+            gap: 8px;
+        }
+        .plant-form select {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            background: #1a1a30;
+            color: var(--text);
+            border: 1px solid #3a2a50;
             font-size: 14px;
         }
-        .error { color: #f66; margin-top: 10px; }
-        .success { color: #6f6; margin-top: 10px; }
-        .nav { margin-bottom: 15px; }
-        .nav a { color: #c9b1ff; text-decoration: none; font-size: 14px; }
-        .nav a:hover { text-decoration: underline; }
+        .plant-form .btn { flex: 0; padding: 10px 20px; }
     </style>
 </head>
 <body>
-    <h1>🌱 Твой сад</h1>
-    <div class="nav">
-        <a href="/api/game/inventory">🎒 Инвентарь</a>
-    </div>
-    <div id="garden">
-        {% for bed in beds %}
-        <div class="bed {% if bed.is_dead %}dead{% elif bed.can_harvest %}ready{% elif bed.plant_name %}growing{% endif %}">
-            {% if bed.plant_name %}
-                <strong>{{ bed.plant_name }}</strong><br>
-                🌿 Стадия: <strong>{{ bed.stage_name }}</strong> ({{ bed.growth_stage }}%)<br>
-                ❤️ Живучесть: {{ bed.vitality }}%<br>
-                ✨ Эссенция: {{ bed.essence }}<br>
-                ⏰ Обновление через: {{ bed.hours_until_update }} ч
-
-                {% if bed.is_dead %}
-                    💀 <strong>Погибло</strong>
-                {% elif bed.recovery_until and bed.recovery_until > now %}
-                    💤 Восстановление до {{ bed.recovery_until_str }}
-                {% else %}
-                    {% if bed.can_water %}
-                        <button onclick="waterBed('{{ bed.id }}')">💧 Полить</button>
-                    {% else %}
-                        <button disabled style="background:#555; cursor:not-allowed;">💧 Полить</button>
-                    {% endif %}
-                    {% if spark_count > 0 %}
-                        <button onclick="useSpark('{{ bed.id }}')">⚡ Искра Роста</button>
-                    {% else %}
-                        <button disabled style="background:#555; cursor:not-allowed;">⚡ Нет Искр</button>
-                    {% endif %}
-                    {% if bed.can_harvest %}
-                        <button onclick="harvestBed('{{ bed.id }}')">🧺 Собрать урожай</button>
-                    {% endif %}
-                {% endif %}
-            {% endif %}
+    <div class="container">
+        <div class="nav">
+            <h1>🌱 Ведьмин Сад</h1>
+            <a href="/api/game/inventory">🎒 Инвентарь</a>
+            <span class="spark-badge">⚡ {{ spark_count }}</span>
         </div>
-        {% endfor %}
-    </div>
 
-    <h2>Посадить растение</h2>
-    <select id="plantSelect">
-        {% for p in plants %}
-        <option value="{{ p.id }}">{{ p.name }}</option>
-        {% endfor %}
-    </select>
-    <button onclick="plantSeed()">Посадить!</button>
-    <div id="message"></div>
+        <!-- Сетка грядок -->
+        <div class="garden-grid" id="gardenGrid">
+            {% for bed in beds %}
+            <div class="bed-card {% if bed.is_dead %}dead{% elif bed.can_harvest %}ready{% elif not bed.plant_name %}empty{% endif %}"
+                 id="bed-{{ bed.id }}">
+
+                {% if bed.plant_name %}
+                    <div class="plant-icon">
+                        {% if bed.stage_name == "Семя" %}🌰
+                        {% elif bed.stage_name == "Росток" %}🌱
+                        {% elif bed.stage_name == "Стебель" %}🌿
+                        {% elif bed.stage_name == "Бутон" %}🌷
+                        {% elif bed.stage_name == "Цветение" %}🌸
+                        {% elif bed.stage_name == "Зрелость" %}🌻
+                        {% else %}🪴
+                        {% endif %}
+                    </div>
+                    <div class="plant-name">{{ bed.plant_name }}</div>
+                    <div class="stage-label">{{ bed.stage_name }}</div>
+
+                    <!-- Бары -->
+                    <div class="bars">
+                        <div class="bar-row">
+                            <span class="bar-icon">❤️</span>
+                            <div class="bar-track">
+                                <div class="bar-fill hp" style="width: {{ bed.vitality if bed.vitality <= 100 else 100 }}%"></div>
+                            </div>
+                            <span class="bar-value">{{ bed.vitality }}%</span>
+                        </div>
+                        <div class="bar-row">
+                            <span class="bar-icon">✨</span>
+                            <div class="bar-track">
+                                <div class="bar-fill essence" style="width: {{ (bed.essence / 10) if bed.essence <= 100 else 100 }}%"></div>
+                            </div>
+                            <span class="bar-value">{{ bed.essence }}</span>
+                        </div>
+                        <div class="bar-row">
+                            <span class="bar-icon">🌱</span>
+                            <div class="bar-track">
+                                <div class="bar-fill growth" style="width: {{ bed.growth_stage }}%"></div>
+                            </div>
+                            <span class="bar-value">{{ bed.growth_stage }}%</span>
+                        </div>
+                    </div>
+
+                    <!-- Статус -->
+                    {% if bed.is_dead %}
+                        <div style="text-align:center; color:#c04040; font-size:13px;">💀 Погибло</div>
+                    {% elif bed.recovery_until and bed.recovery_until > now %}
+                        <div style="text-align:center; font-size:11px; color:var(--muted);">💤 Восст. до {{ bed.recovery_until_str }}</div>
+                    {% endif %}
+
+                    <!-- Кнопки -->
+                    {% if not bed.is_dead and not (bed.recovery_until and bed.recovery_until > now) %}
+                    <div class="btn-row">
+                        <button class="btn" onclick="waterBed('{{ bed.id }}')"
+                                {% if not bed.can_water %}disabled{% endif %}>
+                            💧
+                        </button>
+                        <button class="btn" onclick="useSpark('{{ bed.id }}')"
+                                {% if spark_count == 0 or bed.growth_stage >= 100 %}disabled{% endif %}>
+                            ⚡
+                        </button>
+                        {% if bed.can_harvest %}
+                        <button class="btn harvest" onclick="harvestBed('{{ bed.id }}')">
+                            🧺
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                {% else %}
+                    <div class="empty-text">Пустая грядка</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Посадка -->
+        <div class="plant-section">
+            <h2>Посадить растение</h2>
+            <div class="plant-form">
+                <select id="plantSelect">
+                    {% for p in plants %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn" onclick="plantSeed()">Посадить!</button>
+            </div>
+        </div>
+
+        <div id="message"></div>
+    </div>
 
     <script>
+        function showMessage(text, type) {
+            const msg = document.getElementById("message");
+            msg.textContent = text;
+            msg.className = type === "success" ? "msg-success" : "msg-error";
+        }
+
         async function plantSeed() {
             const plantId = document.getElementById("plantSelect").value;
-            const msg = document.getElementById("message");
-            msg.className = "";
-            msg.textContent = "Сажаем...";
+            showMessage("Сажаем...", "");
             try {
-                const response = await fetch("/api/game/garden/plant", {
+                const r = await fetch("/api/game/garden/plant", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ plant_id: parseInt(plantId) })
                 });
-                if (response.ok) {
-                    msg.className = "success";
-                    msg.textContent = "🌿 Посажено!";
+                if (r.ok) {
+                    showMessage("🌿 Посажено!", "success");
                     setTimeout(() => location.reload(), 800);
                 } else {
-                    const error = await response.json();
-                    msg.className = "error";
-                    msg.textContent = "❌ " + error.detail;
+                    const e = await r.json();
+                    showMessage("❌ " + e.detail, "error");
                 }
-            } catch (e) {
-                msg.className = "error";
-                msg.textContent = "❌ Ошибка соединения";
+            } catch {
+                showMessage("❌ Ошибка соединения", "error");
             }
         }
 
         async function waterBed(bedId) {
-            const msg = document.getElementById("message");
-            msg.className = "";
-            msg.textContent = "Поливаем...";
+            showMessage("Поливаем...", "");
             try {
-                const response = await fetch("/api/game/garden/water", {
+                const r = await fetch("/api/game/garden/water", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ bed_id: bedId })
                 });
-                if (!response.ok) {
-                    const error = await response.json();
-                    msg.className = "error";
-                    msg.textContent = "❌ " + (error.detail || "Ошибка сервера");
-                    return;
+                if (r.ok) {
+                    const d = await r.json();
+                    showMessage(`💧 Полито! Живучесть: ${d.vitality}%, Эссенция: ${d.essence}`, "success");
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    const e = await r.json();
+                    showMessage("❌ " + e.detail, "error");
                 }
-                const data = await response.json();
-                msg.className = "success";
-                msg.textContent = `💧 Полито! Стадия: ${data.stage_name}, Эссенция: ${data.essence}`;
-                setTimeout(() => location.reload(), 800);
-            } catch (e) {
-                msg.className = "error";
-                msg.textContent = "❌ Ошибка соединения";
+            } catch {
+                showMessage("❌ Ошибка соединения", "error");
             }
         }
-        async function harvestBed(bedId) {
-            const msg = document.getElementById("message");
-            msg.className = "";
-            msg.textContent = "Собираем...";
 
-            try {
-                const response = await fetch("/api/game/garden/harvest", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ bed_id: bedId })
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    msg.className = "error";
-                    msg.textContent = "❌ " + (error.detail || "Ошибка сервера");
-                    return;
-                }
-
-                const data = await response.json();
-                const mainInfo = data.main_harvest.map(h => `${h.quantity}x ${h.name} (${h.quality})`).join(", ");
-                const bonusInfo = data.bonus_harvest.length > 0 ? ` | 🎁 Бонус: ${data.bonus_harvest.map(b => b.name).join(", ")}` : "";
-                const rareInfo = data.rare_harvest.length > 0 ? ` | 🌟 Удача: ${data.rare_harvest.map(r => r.name).join(", ")}` : "";
-                
-                msg.className = "success";
-                msg.innerHTML = `🧺 Собрано! ${mainInfo}${bonusInfo}${rareInfo}`;
-                setTimeout(() => location.reload(), 5000);  // 4 секунды, чтобы прочитать
-            } catch (e) {
-                msg.className = "error";
-                msg.textContent = "❌ Ошибка соединения";
-            }
-        }
         async function useSpark(bedId) {
-            const msg = document.getElementById("message");
-            msg.className = "";
-            msg.textContent = "Применяем Искру Роста...";
-
+            showMessage("Применяем Искру...", "");
             try {
-                const response = await fetch("/api/game/garden/use-spark", {
+                const r = await fetch("/api/game/garden/use-spark", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ bed_id: bedId })
                 });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    msg.className = "error";
-                    msg.textContent = "❌ " + (error.detail || "Ошибка сервера");
-                    return;
+                if (r.ok) {
+                    const d = await r.json();
+                    showMessage(`⚡ Искра! Стадия: ${d.stage_name} (${d.growth_stage}%)`, "success");
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    const e = await r.json();
+                    showMessage("❌ " + e.detail, "error");
                 }
+            } catch {
+                showMessage("❌ Ошибка соединения", "error");
+            }
+        }
 
-                const data = await response.json();
-                msg.className = "success";
-                msg.textContent = `⚡ Искра Роста! Стадия: ${data.stage_name} (${data.growth_stage}%)`;
-                setTimeout(() => location.reload(), 1500);
-            } catch (e) {
-                msg.className = "error";
-                msg.textContent = "❌ Ошибка соединения";
+        async function harvestBed(bedId) {
+            showMessage("Собираем...", "");
+            try {
+                const r = await fetch("/api/game/garden/harvest", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ bed_id: bedId })
+                });
+                if (r.ok) {
+                    const d = await r.json();
+                    const main = d.main_harvest.map(h => `${h.quantity}x ${h.name} (${h.quality})`).join(", ");
+                    const bonus = d.bonus_harvest.length > 0 ? " | 🎁 " + d.bonus_harvest.map(b => b.name).join(", ") : "";
+                    const rare = d.rare_harvest.length > 0 ? " | 🌟 " + d.rare_harvest.map(r => r.name).join(", ") : "";
+                    showMessage("🧺 " + main + bonus + rare, "success");
+                    setTimeout(() => location.reload(), 3000);
+                } else {
+                    const e = await r.json();
+                    showMessage("❌ " + e.detail, "error");
+                }
+            } catch {
+                showMessage("❌ Ошибка соединения", "error");
             }
         }
     </script>
