@@ -6,6 +6,8 @@ from sqlalchemy.sql import func
 
 from app.core.database import Base
 from app.core import config
+from app.core import balance
+from app.game.formulas import get_stage_name, can_level_up
 
 
 class GardenBed(Base):
@@ -34,18 +36,7 @@ class GardenBed(Base):
 
     @property
     def stage_name(self) -> str:
-        stages = [
-            (0, "Семя"),
-            (20, "Росток"),
-            (40, "Стебель"),
-            (60, "Бутон"),
-            (80, "Цветение"),
-            (100, "Зрелость"),
-        ]
-        for threshold, name in reversed(stages):
-            if self.growth_stage >= threshold:
-                return name
-        return "Семя"
+        return get_stage_name(self.growth_stage)
 
     @property
     def is_dead(self) -> bool:
@@ -64,30 +55,32 @@ class GardenBed(Base):
             return False
         if self.plant_id is None:
             return False
-        if self.growth_stage >= 100:  # Зрелость — поливать нельзя
-            return False
         if self.recovery_until and self.recovery_until > datetime.utcnow():
             return False
+        # В Зените (100%) поливать можно!
         if self.last_watered_at:
             return self.last_watered_at.date() < datetime.utcnow().date()
         return True
 
     @property
     def can_harvest(self) -> bool:
-        """Можно ли собирать."""
         if self.is_dead:
             return False
         if self.plant_id is None:
             return False
         if self.recovery_until and self.recovery_until > datetime.utcnow():
             return False
-        return self.growth_stage >= (self.plant.min_harvest_stage if self.plant else 60)    
+        return self.growth_stage >= balance.MIN_HARVEST_STAGE
+
+    @property
+    def is_in_zenith(self) -> bool:
+        return self.growth_stage >= 100
             
     @property
     def hours_until_next_update(self) -> int:
-        """Сколько часов осталось до следующего ежедневного обновления."""
         if not self.last_daily_update:
             return 0
-        next_update = self.last_daily_update + timedelta(hours=config.RECOVERY_HOURS)
+        next_update = self.last_daily_update + timedelta(hours=balance.HOURS_BETWEEN_UPDATES)
         delta = next_update - datetime.utcnow()
         return max(0, int(delta.total_seconds() / 3600))
+        

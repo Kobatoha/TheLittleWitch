@@ -4,7 +4,11 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core import config
+from app.core import balance
+
+from app.game import formulas
 from app.game.utils import format_dt
+
 from app.models.garden_bed import GardenBed
 from app.models.inventory import Inventory
 from app.models.item import Item
@@ -81,8 +85,9 @@ def water_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     plant = bed.plant
 
     # Восстановление живучести
-    bed.vitality = min(bed.vitality + config.WATER_VITALITY_BOOST, plant.base_vitality)
-    bed.essence += plant.essence_per_care
+    bed.vitality = min(bed.vitality + balance.WATER_VITALITY_BOOST, plant.base_vitality)
+    bed.essence += plant.essence_per_care  # растение диктует прирост эссенции
+    bed.growth_stage = min(bed.growth_stage, 100)  # не двигаем, только если не формула
     bed.last_watered_at = datetime.utcnow()
 
     db.commit()
@@ -115,22 +120,10 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
     }
 
     # === БРОСОК 1: Основной урожай ===
-    if bed.growth_stage >= 95:
-        main_multiplier = 3
-    elif bed.growth_stage >= 80:
-        main_multiplier = 2
-    else:
-        main_multiplier = 1
+    main_multiplier = formulas.get_harvest_multiplier(bed.growth_stage)
 
     # === БРОСОК 2: Качество ===
-    if bed.vitality >= 100:
-        quality = config.QUALITY_SPARKLING
-    elif bed.vitality >= 80:
-        quality = config.QUALITY_JUICY
-    elif bed.vitality >= 50:
-        quality = config.QUALITY_NORMAL
-    else:
-        quality = config.QUALITY_WITHERED
+    quality = formulas.get_quality(bed.vitality)
 
     # Находим/создаём предмет
     item = db.query(Item).filter(Item.name.ilike(f"%{plant.name.split()[0]}%")).first()
@@ -154,9 +147,7 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
     })
 
     # === БРОСОК 3: Бонусный дроп ===
-    base_bonus = bed.essence // 25
-    dice_bonus = random.randint(0, base_bonus)
-    total_bonus = base_bonus + dice_bonus
+    total_bonus = formulas.roll_bonus_drops(bed.essence)
 
     if total_bonus > 0:
         bonus_items = db.query(Item).filter(Item.item_type == "bonus").all()
@@ -177,7 +168,8 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
                 result["bonus_harvest"].append({"name": bonus_item.name, "rarity": bonus_item.rarity})
 
     # === БРОСОК 4: Редкая удача ===
-    rare_chance = config.RARE_DROP_BASE_CHANCE
+    rare_triggered = formulas.roll_rare_drop(bed.essence, bed.growth_stage)
+
     if bed.essence >= 100:
         rare_chance += config.RARE_DROP_ESSENCE_BONUS
     if bed.growth_stage >= 95:
@@ -249,10 +241,10 @@ def use_growth_spark(db: Session, player_id: int, bed_id: int) -> GardenBed:
     bed.recovery_until = None
 
     # Рост
-    bed.growth_stage = min(bed.growth_stage + config.SPARK_GROWTH_PERCENT, 100)
-
-    # Живучесть падает (ночной стресс)
-    bed.vitality = max(bed.vitality - config.SPARK_VITALITY_LOSS, 0)
+    bed.growth_stage = min(bed.growth_stage + balance.SPARK_GROWTH_PERCENT, 100)
+   
+    # Живучесть
+    bed.vitality = max(bed.vitality - balance.SPARK_VITALITY_COST, 0)
 
     # Эссенция: если вчера поливали — не падает, иначе теряем %
     yesterday = datetime.utcnow().date() - timedelta(days=1)
@@ -280,8 +272,8 @@ def process_daily_update(db: Session, bed: GardenBed) -> GardenBed:
     # Проверяем, прошло ли достаточно времени с последнего обновления
     if bed.last_daily_update:
         hours_since = (now - bed.last_daily_update).total_seconds() / 3600
-        if hours_since < config.RECOVERY_HOURS:
-            return bed
+        if hours_since < balance.HOURS_BETWEEN_UPDATES:
+            return bed  # ещё не время
 
     if bed.plant_id is None:
         bed.last_daily_update = now
@@ -291,22 +283,24 @@ def process_daily_update(db: Session, bed: GardenBed) -> GardenBed:
         bed.last_daily_update = now
         return bed
 
-    plant = bed.plant
+    # === БЫЛ ЛИ ПОЛИВ ВЧЕРА? ===
+    yesterday = now - timedelta(hours=24)
+    was_watered = (
+        bed.last_watered_at is not None 
+        and bed.last_watered_at >= yesterday
+    )
 
-    # === РОСТ ===
-    bed.growth_stage = min(bed.growth_stage + config.DAILY_GROWTH_PERCENT, 100)
+    # === ЭССЕНЦИЯ ===
+    essence_decay = formulas.calculate_night_essence_decay(bed.essence, was_watered)
+    bed.essence = max(bed.essence - essence_decay, 0)
 
-    # === ЖИВУЧЕСТЬ (ночной стресс) ===
-    bed.vitality = max(bed.vitality - config.NIGHT_VITALITY_LOSS, 0)
+    # === ЖИВУЧЕСТЬ (в Зените не падает) ===
+    if not bed.is_in_zenith:
+        bed.vitality = max(bed.vitality - balance.NIGHT_VITALITY_COST, 0)
 
-    # === ЭССЕНЦИЯ: если вчера был полив — не падает, иначе теряем % ===
-    if bed.last_watered_at and bed.last_watered_at.date() >= (now - timedelta(hours=config.RECOVERY_HOURS)).date():
-        pass
-    else:
-        bed.essence = max(
-            bed.essence - int(bed.essence * config.ESSENCE_DECAY_PERCENT / 100),
-            0,
-        )
+    # === РОСТ (только если < 100%) ===
+    if formulas.can_level_up(bed.growth_stage):
+        bed.growth_stage = min(bed.growth_stage + balance.DAILY_GROWTH_PERCENT, 100)
 
     # === СБРОС ПОЛИВА (новый день) ===
     bed.last_watered_at = None
@@ -333,4 +327,5 @@ def process_all_daily_updates(db: Session, player_id: int) -> list[GardenBed]:
             bed = process_daily_update(db, bed)
             updated.append(bed)
     return updated
+
     
