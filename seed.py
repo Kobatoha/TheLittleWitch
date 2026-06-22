@@ -7,11 +7,8 @@ def seed_plants():
         Plant(
             name="Мандрагора",
             description="Корень кричит при сборе. Очень живучая.",
-            growth_time=60,           # старая система
-            water_bonus=15,
-            base_harvest_count=1,
-            base_vitality=120,        # новая: живучее других
-            vitality_decay=3,         # новая: медленно увядает
+            base_vitality=120,
+            vitality_decay=3,
             essence_per_care=10,
             growth_per_care=7,
             min_harvest_stage=60,
@@ -20,12 +17,9 @@ def seed_plants():
         Plant(
             name="Лунная лилия",
             description="Цветёт только под луной. Высокая эссенция.",
-            growth_time=120,
-            water_bonus=20,
-            base_harvest_count=2,
-            base_vitality=80,         # новая: нежная
-            vitality_decay=8,         # новая: быстро увядает без ухода
-            essence_per_care=18,      # новая: много эссенции
+            base_vitality=80,
+            vitality_decay=8,
+            essence_per_care=18,
             growth_per_care=10,
             min_harvest_stage=70,
             base_potency=100,
@@ -33,13 +27,10 @@ def seed_plants():
         Plant(
             name="Шипучка болотная",
             description="Растёт быстро, но слабая магически.",
-            growth_time=30,
-            water_bonus=10,
-            base_harvest_count=3,
             base_vitality=100,
             vitality_decay=5,
-            essence_per_care=6,       # новая: мало эссенции
-            growth_per_care=12,       # новая: быстро растёт
+            essence_per_care=6,
+            growth_per_care=12,
             min_harvest_stage=50,
             base_potency=100,
         ),

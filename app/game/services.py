@@ -264,3 +264,64 @@ def use_growth_spark(db: Session, player_id: int, bed_id: int) -> GardenBed:
     db.commit()
     db.refresh(bed)
     return bed
+
+# === ЕЖЕДНЕВНОЕ ОБНОВЛЕНИЕ ===
+
+def process_daily_update(db: Session, bed: GardenBed) -> GardenBed:
+    """Обрабатывает ежедневное обновление для одного растения."""
+    now = datetime.utcnow()
+
+    # Проверяем, прошло ли 24 часа с последнего обновления
+    if bed.last_daily_update:
+        hours_since = (now - bed.last_daily_update).total_seconds() / 3600
+        if hours_since < 24:
+            return bed  # ещё не время
+
+    if bed.plant_id is None:
+        bed.last_daily_update = now
+        return bed
+
+    if bed.is_dead:
+        bed.last_daily_update = now
+        return bed
+
+    plant = bed.plant
+
+    # === РОСТ: +4% стадии ===
+    bed.growth_stage = min(bed.growth_stage + 4, 100)
+
+    # === ЖИВУЧЕСТЬ: -5% (ночной стресс) ===
+    bed.vitality = max(bed.vitality - 5, 0)
+
+    # === ЭССЕНЦИЯ: если вчера был полив — не падает, иначе -20% ===
+    if bed.last_watered_at and bed.last_watered_at.date() >= (now - timedelta(hours=24)).date():
+        pass  # эссенция сохраняется
+    else:
+        bed.essence = max(bed.essence - int(bed.essence * 0.2), 0)
+
+    # === СБРОС ПОЛИВА (новый день) ===
+    bed.last_watered_at = None
+
+    # === ВОССТАНОВЛЕНИЕ ===
+    if bed.recovery_until and bed.recovery_until <= now:
+        bed.recovery_until = None
+
+    bed.last_daily_update = now
+
+    if bed.vitality <= 0:
+        bed.vitality = 0  # смерть
+
+    db.commit()
+    return bed
+
+
+def process_all_daily_updates(db: Session, player_id: int) -> list[GardenBed]:
+    """Обновляет все растения игрока, если прошло 24 часа."""
+    beds = get_player_garden(db, player_id)
+    updated = []
+    for bed in beds:
+        if bed.plant_id is not None:
+            bed = process_daily_update(db, bed)
+            updated.append(bed)
+    return updated
+    

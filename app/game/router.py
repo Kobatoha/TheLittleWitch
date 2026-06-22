@@ -54,6 +54,7 @@ def bed_to_dict(bed):
         "can_harvest": bed.can_harvest,
         "recovery_until": bed.recovery_until,  # ← сырой datetime для сравнения в шаблоне
         "recovery_until_str": format_dt(bed.recovery_until) if bed.recovery_until else None,  # ← для показа
+        "hours_until_update": bed.hours_until_next_update,  # ← новое
         "planted_at": format_dt(bed.planted_at),
     }
 
@@ -94,6 +95,9 @@ def water_bed(request: WaterRequest, db: Session = Depends(get_db)):
 
 @router.get("/garden/page", response_class=HTMLResponse)
 def garden_page(request: Request, db: Session = Depends(get_db)):
+     # Ежедневное обновление всех растений
+    services.process_all_daily_updates(db, TEMP_PLAYER_ID)
+
     beds = services.get_player_garden(db, TEMP_PLAYER_ID)
     plants = db.query(Plant).all()
     beds_out = [bed_to_dict(bed) for bed in beds]

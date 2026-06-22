@@ -1,10 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+
 
 class GardenBed(Base):
     __tablename__ = "garden_beds"
@@ -22,7 +23,8 @@ class GardenBed(Base):
     last_watered_at = Column(DateTime, nullable=True)      # когда последний раз поливали
     last_harvested_at = Column(DateTime, nullable=True)     # когда последний раз собирали
     recovery_until = Column(DateTime, nullable=True)        # до какого времени растение восстанавливается
-
+    last_daily_update = Column(DateTime, nullable=True)  # когда было последнее ежедневное обновление
+    
     planted_at = Column(DateTime, server_default=func.now())  # когда посадили (для истории)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -80,3 +82,11 @@ class GardenBed(Base):
             return False
         return self.growth_stage >= (self.plant.min_harvest_stage if self.plant else 60)    
             
+    @property
+    def hours_until_next_update(self) -> int:
+        """Сколько часов осталось до следующего ежедневного обновления."""
+        if not self.last_daily_update:
+            return 0
+        next_update = self.last_daily_update + timedelta(hours=24)
+        delta = next_update - datetime.utcnow()
+        return max(0, int(delta.total_seconds() / 3600))
