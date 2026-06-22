@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.core import config
 
 
 class GardenBed(Base):
@@ -87,6 +88,6 @@ class GardenBed(Base):
         """Сколько часов осталось до следующего ежедневного обновления."""
         if not self.last_daily_update:
             return 0
-        next_update = self.last_daily_update + timedelta(hours=24)
+        next_update = self.last_daily_update + timedelta(hours=config.RECOVERY_HOURS)
         delta = next_update - datetime.utcnow()
         return max(0, int(delta.total_seconds() / 3600))

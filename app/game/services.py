@@ -3,14 +3,14 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.core import config
+from app.game.utils import format_dt
 from app.models.garden_bed import GardenBed
 from app.models.inventory import Inventory
 from app.models.item import Item
 from app.models.plant import Plant
 from app.models.player import Player
 
-
-MAX_BEDS_PER_PLAYER = 4
 
 # === САД ===
 
@@ -29,8 +29,8 @@ def plant_seed(db: Session, player_id: int, plant_id: int) -> GardenBed:
         GardenBed.player_id == player_id,
         GardenBed.plant_id != None
     ).count()
-    if beds_count >= MAX_BEDS_PER_PLAYER:
-        raise ValueError(f"Максимум {MAX_BEDS_PER_PLAYER} грядок. Освободи одну!")
+    if beds_count >= config.MAX_BEDS_PER_PLAYER:
+        raise ValueError(f"Максимум {config.MAX_BEDS_PER_PLAYER} грядок. Освободи одну!")
 
     plant = db.query(Plant).filter(Plant.id == plant_id).first()
     if not plant:
@@ -81,7 +81,7 @@ def water_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     plant = bed.plant
 
     # Восстановление живучести
-    bed.vitality = min(bed.vitality + 15, plant.base_vitality)
+    bed.vitality = min(bed.vitality + config.WATER_VITALITY_BOOST, plant.base_vitality)
     bed.essence += plant.essence_per_care
     bed.last_watered_at = datetime.utcnow()
 
@@ -124,13 +124,13 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
 
     # === БРОСОК 2: Качество ===
     if bed.vitality >= 100:
-        quality = "Искрящийся"
+        quality = config.QUALITY_SPARKLING
     elif bed.vitality >= 80:
-        quality = "Сочный"
+        quality = config.QUALITY_JUICY
     elif bed.vitality >= 50:
-        quality = "Обычный"
+        quality = config.QUALITY_NORMAL
     else:
-        quality = "Увядший"
+        quality = config.QUALITY_WITHERED
 
     # Находим/создаём предмет
     item = db.query(Item).filter(Item.name.ilike(f"%{plant.name.split()[0]}%")).first()
@@ -177,11 +177,11 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
                 result["bonus_harvest"].append({"name": bonus_item.name, "rarity": bonus_item.rarity})
 
     # === БРОСОК 4: Редкая удача ===
-    rare_chance = 1.0
+    rare_chance = config.RARE_DROP_BASE_CHANCE
     if bed.essence >= 100:
-        rare_chance += 1.0
+        rare_chance += config.RARE_DROP_ESSENCE_BONUS
     if bed.growth_stage >= 95:
-        rare_chance += 1.0
+        rare_chance += config.RARE_DROP_ZENITH_BONUS
 
     if random.random() * 100 < rare_chance:
         rare_items = db.query(Item).filter(Item.item_type == "rare").all()
@@ -199,10 +199,13 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
 
     # === ПОСЛЕ СБОРА: растение остаётся, но страдает ===
     bed.essence = 0
-    bed.vitality = max(bed.vitality - 20, 0)  # -20 Живучести, но не ниже 0
-    bed.growth_stage = max(bed.growth_stage - 10, bed.plant.min_harvest_stage - 10)  # откат на 10%
+    bed.vitality = max(bed.vitality - config.HARVEST_VITALITY_COST, 0)
+    bed.growth_stage = max(
+        bed.growth_stage - config.HARVEST_STAGE_ROLLBACK,
+        bed.plant.min_harvest_stage - config.HARVEST_STAGE_ROLLBACK,
+    )
     bed.last_harvested_at = datetime.utcnow()
-    bed.recovery_until = datetime.utcnow() + timedelta(days=1)  # 1 день восстановления (потом можно на 5)
+    bed.recovery_until = datetime.utcnow() + timedelta(hours=config.RECOVERY_HOURS)
 
     if bed.vitality <= 0:
         bed.vitality = 0  # смерть
@@ -245,18 +248,21 @@ def use_growth_spark(db: Session, player_id: int, bed_id: int) -> GardenBed:
     bed.last_watered_at = None
     bed.recovery_until = None
 
-    # Рост: +4% к стадии
-    bed.growth_stage = min(bed.growth_stage + 4, 100)
+    # Рост
+    bed.growth_stage = min(bed.growth_stage + config.SPARK_GROWTH_PERCENT, 100)
 
-    # Живучесть падает на 5% (ночной стресс)
-    bed.vitality = max(bed.vitality - 5, 0)
+    # Живучесть падает (ночной стресс)
+    bed.vitality = max(bed.vitality - config.SPARK_VITALITY_LOSS, 0)
 
-    # Эссенция: если вчера поливали — не падает, иначе -20%
+    # Эссенция: если вчера поливали — не падает, иначе теряем %
     yesterday = datetime.utcnow().date() - timedelta(days=1)
     if bed.last_watered_at and bed.last_watered_at.date() >= yesterday:
-        pass  # эссенция не падает
+        pass
     else:
-        bed.essence = max(bed.essence - int(bed.essence * 0.2), 0)
+        bed.essence = max(
+            bed.essence - int(bed.essence * config.ESSENCE_DECAY_PERCENT / 100),
+            0,
+        )
 
     if bed.vitality <= 0:
         bed.vitality = 0
@@ -271,11 +277,11 @@ def process_daily_update(db: Session, bed: GardenBed) -> GardenBed:
     """Обрабатывает ежедневное обновление для одного растения."""
     now = datetime.utcnow()
 
-    # Проверяем, прошло ли 24 часа с последнего обновления
+    # Проверяем, прошло ли достаточно времени с последнего обновления
     if bed.last_daily_update:
         hours_since = (now - bed.last_daily_update).total_seconds() / 3600
-        if hours_since < 24:
-            return bed  # ещё не время
+        if hours_since < config.RECOVERY_HOURS:
+            return bed
 
     if bed.plant_id is None:
         bed.last_daily_update = now
@@ -287,17 +293,20 @@ def process_daily_update(db: Session, bed: GardenBed) -> GardenBed:
 
     plant = bed.plant
 
-    # === РОСТ: +4% стадии ===
-    bed.growth_stage = min(bed.growth_stage + 4, 100)
+    # === РОСТ ===
+    bed.growth_stage = min(bed.growth_stage + config.DAILY_GROWTH_PERCENT, 100)
 
-    # === ЖИВУЧЕСТЬ: -5% (ночной стресс) ===
-    bed.vitality = max(bed.vitality - 5, 0)
+    # === ЖИВУЧЕСТЬ (ночной стресс) ===
+    bed.vitality = max(bed.vitality - config.NIGHT_VITALITY_LOSS, 0)
 
-    # === ЭССЕНЦИЯ: если вчера был полив — не падает, иначе -20% ===
-    if bed.last_watered_at and bed.last_watered_at.date() >= (now - timedelta(hours=24)).date():
-        pass  # эссенция сохраняется
+    # === ЭССЕНЦИЯ: если вчера был полив — не падает, иначе теряем % ===
+    if bed.last_watered_at and bed.last_watered_at.date() >= (now - timedelta(hours=config.RECOVERY_HOURS)).date():
+        pass
     else:
-        bed.essence = max(bed.essence - int(bed.essence * 0.2), 0)
+        bed.essence = max(
+            bed.essence - int(bed.essence * config.ESSENCE_DECAY_PERCENT / 100),
+            0,
+        )
 
     # === СБРОС ПОЛИВА (новый день) ===
     bed.last_watered_at = None
@@ -316,7 +325,7 @@ def process_daily_update(db: Session, bed: GardenBed) -> GardenBed:
 
 
 def process_all_daily_updates(db: Session, player_id: int) -> list[GardenBed]:
-    """Обновляет все растения игрока, если прошло 24 часа."""
+    """Обновляет все растения игрока, если прошло достаточно времени."""
     beds = get_player_garden(db, player_id)
     updated = []
     for bed in beds:
