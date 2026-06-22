@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Инвентарь ведьмочки</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 { color: #c9b1ff; }
+        h2 {
+            color: #a0d2db;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            margin-top: 25px;
+        }
+        .item {
+            background: #16213e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-info {
+            flex: 1;
+        }
+        .item-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .item-detail {
+            font-size: 13px;
+            color: #999;
+            margin-top: 3px;
+        }
+        .item-count {
+            font-size: 18px;
+            font-weight: bold;
+            color: #c9b1ff;
+            min-width: 40px;
+            text-align: center;
+        }
+        .quality-Увядший { color: #999; }
+        .quality-Обычный { color: #ccc; }
+        .quality-Сочный { color: #7fdb7f; }
+        .quality-Искрящийся { color: #ffd700; }
+        .quality-Редкий { color: #ff6b9d; }
+
+        .rarity-common { border-left: 3px solid #999; }
+        .rarity-uncommon { border-left: 3px solid #7fdb7f; }
+        .rarity-rare { border-left: 3px solid #4da6ff; }
+        .rarity-epic { border-left: 3px solid #c44dff; }
+        .rarity-legendary { border-left: 3px solid #ffd700; }
+
+        .empty { color: #666; font-style: italic; padding: 15px; }
+        .nav { margin-bottom: 20px; }
+        .nav a {
+            color: #c9b1ff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .nav a:hover { text-decoration: underline; }
+        .stats {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/api/game/garden/page">← Вернуться в сад</a>
+    </div>
+
+    <h1>🎒 Инвентарь ведьмочки</h1>
+
+    <div class="stats">
+        Всего предметов: {{ total_items }} | ⚡ Искр Роста: {{ spark_count }}
+    </div>
+
+    <!-- Ингредиенты -->
+    <h2>🌿 Ингредиенты</h2>
+    {% if ingredients %}
+        {% for item in ingredients %}
+        <div class="item rarity-{{ item.rarity }}">
+            <div class="item-info">
+                <div class="item-name">{{ item.item_name }}</div>
+                <div class="item-detail">
+                    <span class="quality-{{ item.quality }}">{{ item.quality }}</span>
+                    {% if item.description %} • {{ item.description }}{% endif %}
+                </div>
+            </div>
+            <div class="item-count">{{ item.quantity }}x</div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty">Пока пусто. Вырасти что-нибудь в саду!</div>
+    {% endif %}
+
+    <!-- Бонусы -->
+    <h2>🎁 Бонусные предметы</h2>
+    {% if bonuses %}
+        {% for item in bonuses %}
+        <div class="item rarity-{{ item.rarity }}">
+            <div class="item-info">
+                <div class="item-name">{{ item.item_name }}</div>
+                <div class="item-detail">
+                    {{ item.rarity | capitalize }}
+                    {% if item.description %} • {{ item.description }}{% endif %}
+                </div>
+            </div>
+            <div class="item-count">{{ item.quantity }}x</div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty">Бонусы выпадают при сборе урожая. Чем выше Эссенция — тем больше!</div>
+    {% endif %}
+
+    <!-- Расходники -->
+    <h2>⚡ Расходные предметы</h2>
+    {% if consumables %}
+        {% for item in consumables %}
+        <div class="item rarity-{{ item.rarity }}">
+            <div class="item-info">
+                <div class="item-name">{{ item.item_name }}</div>
+                <div class="item-detail">
+                    {% if item.description %}{{ item.description }}{% endif %}
+                </div>
+            </div>
+            <div class="item-count">{{ item.quantity }}x</div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty">Здесь будут Искры Роста и другие полезные предметы.</div>
+    {% endif %}
+
+    <!-- Редкие находки -->
+    <h2>🌟 Редкая удача</h2>
+    {% if rares %}
+        {% for item in rares %}
+        <div class="item rarity-{{ item.rarity }}">
+            <div class="item-info">
+                <div class="item-name">{{ item.item_name }}</div>
+                <div class="item-detail">
+                    {{ item.rarity | capitalize }}
+                    {% if item.description %} • {{ item.description }}{% endif %}
+                </div>
+            </div>
+            <div class="item-count">{{ item.quantity }}x</div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty">Здесь появятся самые редкие находки. Шанс выпадения: 1-3%</div>
+    {% endif %}
+
+    <div class="nav" style="margin-top: 25px;">
+        <a href="/api/game/garden/page">← Вернуться в сад</a>
+    </div>
+</body>
+</html>

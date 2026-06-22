@@ -144,3 +144,54 @@ def use_growth_spark(request: UseItemRequest, db: Session = Depends(get_db)):
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# === ИНВЕНТАРЬ ===
+
+@router.get("/inventory", response_class=HTMLResponse)
+def inventory_page(request: Request, db: Session = Depends(get_db)):
+    # Получаем все предметы игрока
+    inventory_items = db.query(Inventory).filter(
+        Inventory.player_id == TEMP_PLAYER_ID,
+        Inventory.quantity > 0
+    ).order_by(Inventory.created_at.desc()).all()
+
+    # Группируем по типу
+    ingredients = []
+    bonuses = []
+    rares = []
+    consumables = []
+
+    for inv in inventory_items:
+        item_data = {
+            "id": inv.id,
+            "item_name": inv.item.name,
+            "item_type": inv.item.item_type,
+            "rarity": inv.item.rarity,
+            "quality": inv.quality if inv.quality else "Обычный",
+            "quantity": inv.quantity,
+            "description": inv.item.description or "",
+            "created_at": format_dt(inv.created_at)
+        }
+
+        if inv.item.item_type == "ingredient":
+            ingredients.append(item_data)
+        elif inv.item.item_type == "bonus":
+            bonuses.append(item_data)
+        elif inv.item.item_type == "rare":
+            rares.append(item_data)
+        elif inv.item.item_type == "consumable":
+            consumables.append(item_data)
+
+    # Считаем Искры
+    spark_count = sum(1 for c in consumables if c["item_name"] == "Искра Роста")
+
+    return templates.TemplateResponse("inventory.html", {
+        "request": request,
+        "ingredients": ingredients,
+        "bonuses": bonuses,
+        "rares": rares,
+        "consumables": consumables,
+        "spark_count": spark_count,
+        "total_items": len(inventory_items)
+    })
+    

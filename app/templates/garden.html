@@ -41,10 +41,16 @@
         }
         .error { color: #f66; margin-top: 10px; }
         .success { color: #6f6; margin-top: 10px; }
+        .nav { margin-bottom: 15px; }
+        .nav a { color: #c9b1ff; text-decoration: none; font-size: 14px; }
+        .nav a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <h1>🌱 Твой сад</h1>
+    <div class="nav">
+        <a href="/api/game/inventory">🎒 Инвентарь</a>
+    </div>
     <div id="garden">
         {% for bed in beds %}
         <div class="bed {% if bed.is_dead %}dead{% elif bed.can_harvest %}ready{% elif bed.plant_name %}growing{% endif %}">
