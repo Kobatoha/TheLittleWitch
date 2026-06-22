@@ -60,15 +60,17 @@
                     💤 Восстановление до {{ bed.recovery_until_str }}
                 {% else %}
                     {% if bed.can_water %}
-                        <button onclick="waterBed({{ bed.id }})">💧 Полить</button>
+                        <button onclick="waterBed('{{ bed.id }}')">💧 Полить</button>
                     {% else %}
                         <button disabled style="background:#555; cursor:not-allowed;">💧 Полить</button>
                     {% endif %}
-
-                    <button onclick="useSpark({{ bed.id }})">⚡ Искра Роста</button>
-
+                    {% if spark_count > 0 %}
+                        <button onclick="useSpark('{{ bed.id }}')">⚡ Искра Роста</button>
+                    {% else %}
+                        <button disabled style="background:#555; cursor:not-allowed;">⚡ Нет Искр</button>
+                    {% endif %}
                     {% if bed.can_harvest %}
-                        <button onclick="harvestBed({{ bed.id }})">🧺 Собрать урожай</button>
+                        <button onclick="harvestBed('{{ bed.id }}')">🧺 Собрать урожай</button>
                     {% endif %}
                 {% endif %}
             {% endif %}

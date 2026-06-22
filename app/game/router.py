@@ -97,11 +97,24 @@ def garden_page(request: Request, db: Session = Depends(get_db)):
     beds = services.get_player_garden(db, TEMP_PLAYER_ID)
     plants = db.query(Plant).all()
     beds_out = [bed_to_dict(bed) for bed in beds]
+
+    # Считаем Искры Роста в инвентаре
+    spark_item = db.query(Item).filter(Item.name == "Искра Роста").first()
+    spark_count = 0
+    if spark_item:
+        spark_inv = db.query(Inventory).filter(
+            Inventory.player_id == TEMP_PLAYER_ID,
+            Inventory.item_id == spark_item.id
+        ).first()
+        if spark_inv:
+            spark_count = spark_inv.quantity
+
     return templates.TemplateResponse("garden.html", {
         "request": request,
         "beds": beds_out,
         "plants": plants,
-        "now": datetime.utcnow()
+        "now": datetime.utcnow(),
+        "spark_count": spark_count,
     })
 
 
