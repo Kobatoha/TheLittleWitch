@@ -103,12 +103,11 @@ def garden_page(request: Request, db: Session = Depends(get_db)):
     spark_item = db.query(Item).filter(Item.name == "Искра Роста").first()
     spark_count = 0
     if spark_item:
-        spark_inv = db.query(Inventory).filter(
+        spark_invs = db.query(Inventory).filter(
             Inventory.player_id == TEMP_PLAYER_ID,
             Inventory.item_id == spark_item.id
-        ).first()
-        if spark_inv:
-            spark_count = spark_inv.quantity
+        ).all()
+        spark_count = sum(inv.quantity for inv in spark_invs)
 
     return templates.TemplateResponse("garden.html", {
         "request": request,

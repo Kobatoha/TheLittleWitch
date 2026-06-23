@@ -16,6 +16,31 @@ from app.models.plant import Plant
 from app.models.player import Player
 
 
+def add_item_to_inventory(db: Session, player_id: int, item_id: int, quantity: int = 1, quality: str = "Обычный", source_bed_id: int = None) -> Inventory:
+    """Добавляет предмет в инвентарь. Если такой же уже есть — увеличивает количество."""
+    existing = db.query(Inventory).filter(
+        Inventory.player_id == player_id,
+        Inventory.item_id == item_id,
+        Inventory.quality == quality
+    ).first()
+
+    if existing:
+        existing.quantity += quantity
+        db.commit()
+        return existing
+    else:
+        inv = Inventory(
+            player_id=player_id,
+            item_id=item_id,
+            quantity=quantity,
+            quality=quality,
+            source_bed_id=source_bed_id
+        )
+        db.add(inv)
+        db.commit()
+        db.refresh(inv)
+        return inv
+
 # === САД ===
 
 def get_player_garden(db: Session, player_id: int):
@@ -163,14 +188,8 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
         db.add(item)
         db.flush()
 
-    inv_entry = Inventory(
-        player_id=player_id,
-        item_id=item.id,
-        quantity=main_multiplier,
-        quality=quality,
-        source_bed_id=bed.id
-    )
-    db.add(inv_entry)
+    add_item_to_inventory(db, player_id, item.id, main_multiplier, quality, bed.id)
+    
     result["main_harvest"].append({
         "name": item.name,
         "quantity": main_multiplier,
@@ -189,13 +208,7 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
                     weights=[100 if i.rarity == "common" else 40 if i.rarity == "uncommon" else 10 for i in bonus_items],
                     k=1
                 )[0]
-                inv_bonus = Inventory(
-                    player_id=player_id,
-                    item_id=bonus_item.id,
-                    quantity=1,
-                    source_bed_id=bed.id
-                )
-                db.add(inv_bonus)
+                add_item_to_inventory(db, player_id, bonus_item.id, 1, "Обычный", bed.id)
                 result["bonus_harvest"].append({"name": bonus_item.name, "rarity": bonus_item.rarity})
 
     # === БРОСОК 4: Редкая удача ===
@@ -210,14 +223,7 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
         rare_items = db.query(Item).filter(Item.item_type == "rare").all()
         if rare_items:
             rare_item = random.choice(rare_items)
-            inv_rare = Inventory(
-                player_id=player_id,
-                item_id=rare_item.id,
-                quantity=1,
-                quality="Редкий",
-                source_bed_id=bed.id
-            )
-            db.add(inv_rare)
+            add_item_to_inventory(db, player_id, rare_item.id, 1, "Редкий", bed.id)
             result["rare_harvest"].append({"name": rare_item.name, "rarity": rare_item.rarity})
 
     # === ПОСЛЕ СБОРА: растение остаётся, но страдает ===

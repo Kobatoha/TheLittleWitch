@@ -49,7 +49,7 @@ def inventory_page(request: Request, db: Session = Depends(get_db)):
         elif inv.item.item_type == "consumable":
             consumables.append(item_data)
 
-    spark_count = sum(1 for c in consumables if c["item_name"] == "Искра Роста")
+    spark_count = sum(c["quantity"] for c in consumables if c["item_name"] == "Искра Роста")
 
     return templates.TemplateResponse("inventory.html", {
         "request": request,
