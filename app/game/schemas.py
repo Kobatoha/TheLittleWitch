@@ -82,3 +82,11 @@ class InventoryItemOut(BaseModel):
     description: str
     created_at: Optional[str] = None
     
+class CleanRequest(BaseModel):
+    bed_id: int
+
+class CleanResultOut(BaseModel):
+    ok: bool = True
+    plant_name: str
+    vitality: int
+    essence: int

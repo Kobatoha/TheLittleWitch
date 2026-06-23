@@ -1,8 +1,8 @@
-"""add last_daily_update
+"""add last_cleaned_at
 
-Revision ID: cbc32ec2b7cf
+Revision ID: f3ae7afa0c44
 Revises: 
-Create Date: 2026-06-22 12:29:55.486668
+Create Date: 2026-06-23 15:50:45.861997
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'cbc32ec2b7cf'
+revision: str = 'f3ae7afa0c44'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -92,6 +92,7 @@ def upgrade() -> None:
     sa.Column('essence', sa.Integer(), nullable=True),
     sa.Column('growth_stage', sa.Integer(), nullable=True),
     sa.Column('last_watered_at', sa.DateTime(), nullable=True),
+    sa.Column('last_cleaned_at', sa.DateTime(), nullable=True),
     sa.Column('last_harvested_at', sa.DateTime(), nullable=True),
     sa.Column('recovery_until', sa.DateTime(), nullable=True),
     sa.Column('last_daily_update', sa.DateTime(), nullable=True),

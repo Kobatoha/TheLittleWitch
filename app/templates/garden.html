@@ -288,6 +288,10 @@
                     <!-- Кнопки -->
                     {% if not bed.is_dead and not (bed.recovery_until and bed.recovery_until > now) %}
                     <div class="btn-row">
+                        <button class="btn" onclick="cleanBed('{{ bed.id }}')"
+                                {% if not bed.can_clean %}disabled{% endif %}>
+                            🧹
+                        </button>
                         <button class="btn" onclick="waterBed('{{ bed.id }}')"
                                 {% if not bed.can_water %}disabled{% endif %}>
                             💧
@@ -412,6 +416,26 @@
                     const rare = d.rare_harvest.length > 0 ? " | 🌟 " + d.rare_harvest.map(r => r.name).join(", ") : "";
                     showMessage("🧺 " + main + bonus + rare, "success");
                     setTimeout(() => location.reload(), 3000);
+                } else {
+                    const e = await r.json();
+                    showMessage("❌ " + e.detail, "error");
+                }
+            } catch {
+                showMessage("❌ Ошибка соединения", "error");
+            }
+        }
+        async function cleanBed(bedId) {
+            showMessage("Пропалываем...", "");
+            try {
+                const r = await fetch("/api/game/garden/clean", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ bed_id: bedId })
+                });
+                if (r.ok) {
+                    const d = await r.json();
+                    showMessage(`🧹 Прополото! Живучесть: ${d.vitality}%, Эссенция: ${d.essence}`, "success");
+                    setTimeout(() => location.reload(), 1200);
                 } else {
                     const e = await r.json();
                     showMessage("❌ " + e.detail, "error");

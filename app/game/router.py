@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from app.core.database import get_db
 from app.core.config import TEMP_PLAYER_ID
 from app.game import services
+from app.game import schemas
 from app.game.utils import format_dt
 
 from app.models.plant import Plant
@@ -51,6 +52,7 @@ def bed_to_dict(bed):
         "recovery_until_str": format_dt(bed.recovery_until) if bed.recovery_until else None,  # ← для показа
         "hours_until_update": bed.hours_until_next_update,  # ← новое
         "planted_at": format_dt(bed.planted_at),
+        "can_clean": bed.can_clean,
     }
 
 # === API ===
@@ -136,6 +138,19 @@ def use_growth_spark(request: UseItemRequest, db: Session = Depends(get_db)):
             "stage_name": bed.stage_name,
             "essence": bed.essence,
             "can_water": bed.can_water
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/garden/clean", response_model=schemas.CleanResultOut)
+def clean_bed(request: schemas.CleanRequest, db: Session = Depends(get_db)):
+    try:
+        bed = services.clean_bed(db, TEMP_PLAYER_ID, request.bed_id)
+        return {
+            "ok": True,
+            "plant_name": bed.plant_name,
+            "vitality": bed.vitality,
+            "essence": bed.essence
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

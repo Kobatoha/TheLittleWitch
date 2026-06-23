@@ -93,6 +93,37 @@ def water_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     db.commit()
     db.refresh(bed)
     return bed
+
+# === ПРОПОЛКА ===
+
+def clean_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
+    """Прополка: +2 Эссенции, +5 Живучести. Лимит — раз в сутки."""
+    bed = db.query(GardenBed).filter(
+        GardenBed.id == bed_id,
+        GardenBed.player_id == player_id
+    ).first()
+    if not bed:
+        raise ValueError("Грядка не найдена")
+    if bed.plant_id is None:
+        raise ValueError("На грядке ничего не растёт")
+    if bed.is_dead:
+        raise ValueError("Растение погибло.")
+    if bed.recovery_until and bed.recovery_until > datetime.utcnow():
+        raise ValueError(f"Растение восстанавливается до {bed.recovery_until.strftime('%d.%m.%Y %H:%M')}")
+
+    # Проверка дневного лимита прополки
+    if bed.last_cleaned_at and bed.last_cleaned_at.date() >= datetime.utcnow().date():
+        raise ValueError("Прополка уже использована сегодня.")
+
+    plant = bed.plant
+
+    bed.vitality = min(bed.vitality + 5, plant.base_vitality)
+    bed.essence += 2
+    bed.last_cleaned_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(bed)
+    return bed
     
 # === СБОР УРОЖАЯ ===
 
@@ -238,6 +269,7 @@ def use_growth_spark(db: Session, player_id: int, bed_id: int) -> GardenBed:
 
     # Сбрасываем дневной лимит полива
     bed.last_watered_at = None
+    bed.last_cleaned_at = None
     bed.recovery_until = None
 
     # Рост
@@ -304,6 +336,9 @@ def process_daily_update(db: Session, bed: GardenBed) -> GardenBed:
 
     # === СБРОС ПОЛИВА (новый день) ===
     bed.last_watered_at = None
+        
+    # === СБРОС ПРОПОЛКИ (новый день) ===
+    bed.last_cleaned_at = None
 
     # === ВОССТАНОВЛЕНИЕ ===
     if bed.recovery_until and bed.recovery_until <= now:

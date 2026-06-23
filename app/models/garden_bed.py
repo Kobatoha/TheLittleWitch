@@ -24,6 +24,7 @@ class GardenBed(Base):
 
     # Восстановление и лимиты
     last_watered_at = Column(DateTime, nullable=True)      # когда последний раз поливали
+    last_cleaned_at = Column(DateTime, nullable=True)  # когда последний раз пололи
     last_harvested_at = Column(DateTime, nullable=True)     # когда последний раз собирали
     recovery_until = Column(DateTime, nullable=True)        # до какого времени растение восстанавливается
     last_daily_update = Column(DateTime, nullable=True)  # когда было последнее ежедневное обновление
@@ -83,4 +84,17 @@ class GardenBed(Base):
         next_update = self.last_daily_update + timedelta(hours=balance.HOURS_BETWEEN_UPDATES)
         delta = next_update - datetime.utcnow()
         return max(0, int(delta.total_seconds() / 3600))
+    
+    @property
+    def can_clean(self) -> bool:
+        """Можно ли полоть: не умерло, не на восстановлении, не использовано сегодня."""
+        if self.is_dead:
+            return False
+        if self.plant_id is None:
+            return False
+        if self.recovery_until and self.recovery_until > datetime.utcnow():
+            return False
+        if self.last_cleaned_at and self.last_cleaned_at.date() >= datetime.utcnow().date():
+            return False
+        return True
         
