@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from app.core.database import get_db
+from app.core import balance
 from app.core.config import TEMP_PLAYER_ID
 from app.game import services
 from app.game import schemas
@@ -53,6 +54,7 @@ def bed_to_dict(bed):
         "hours_until_update": bed.hours_until_next_update,  # ← новое
         "planted_at": format_dt(bed.planted_at),
         "can_clean": bed.can_clean,
+        "essence_bar_max": balance.ESSENCE_BAR_MAX,
     }
 
 # === API ===

@@ -265,7 +265,7 @@
                         <div class="bar-row">
                             <span class="bar-icon">✨</span>
                             <div class="bar-track">
-                                <div class="bar-fill essence" style="width: {{ (bed.essence / 10) if bed.essence <= 100 else 100 }}%"></div>
+                                <div class="bar-fill essence" style="width: {{ bed.essence if bed.essence <= bed.essence_bar_max else 100 }}%"></div>
                             </div>
                             <span class="bar-value">{{ bed.essence }}</span>
                         </div>

@@ -212,20 +212,13 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
                 result["bonus_harvest"].append({"name": bonus_item.name, "rarity": bonus_item.rarity})
 
     # === БРОСОК 4: Редкая удача ===
-    rare_triggered = formulas.roll_rare_drop(bed.essence, bed.growth_stage)
-
-    if bed.essence >= 100:
-        rare_chance += config.RARE_DROP_ESSENCE_BONUS
-    if bed.growth_stage >= 95:
-        rare_chance += config.RARE_DROP_ZENITH_BONUS
-
-    if random.random() * 100 < rare_chance:
+    if formulas.roll_rare_drop(bed.essence, bed.growth_stage):
         rare_items = db.query(Item).filter(Item.item_type == "rare").all()
         if rare_items:
             rare_item = random.choice(rare_items)
             add_item_to_inventory(db, player_id, rare_item.id, 1, "Редкий", bed.id)
             result["rare_harvest"].append({"name": rare_item.name, "rarity": rare_item.rarity})
-
+        
     # === ПОСЛЕ СБОРА: растение остаётся, но страдает ===
     bed.essence = 0
     bed.vitality = max(bed.vitality - config.HARVEST_VITALITY_COST, 0)
@@ -284,15 +277,7 @@ def use_growth_spark(db: Session, player_id: int, bed_id: int) -> GardenBed:
     # Живучесть
     bed.vitality = max(bed.vitality - balance.SPARK_VITALITY_COST, 0)
 
-    # Эссенция: если вчера поливали — не падает, иначе теряем %
-    yesterday = datetime.utcnow().date() - timedelta(days=1)
-    if bed.last_watered_at and bed.last_watered_at.date() >= yesterday:
-        pass
-    else:
-        bed.essence = max(
-            bed.essence - int(bed.essence * config.ESSENCE_DECAY_PERCENT / 100),
-            0,
-        )
+    # Эссенция — без изменений
 
     if bed.vitality <= 0:
         bed.vitality = 0
