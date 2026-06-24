@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from app.core.config import QUALITY_NORMAL, TEMP_PLAYER_ID
+from app.core.config import TEMP_PLAYER_ID
+from app.core.balance import QUALITY_NORMAL
 from app.core.database import get_db
 from app.game.utils import format_dt
 from app.models.inventory import Inventory
