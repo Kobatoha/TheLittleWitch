@@ -221,13 +221,13 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
         
     # === ПОСЛЕ СБОРА: растение остаётся, но страдает ===
     bed.essence = 0
-    bed.vitality = max(bed.vitality - config.HARVEST_VITALITY_COST, 0)
+    bed.vitality = max(bed.vitality - balance.HARVEST_VITALITY_COST, 0)
     bed.growth_stage = max(
-        bed.growth_stage - config.HARVEST_STAGE_ROLLBACK,
-        bed.plant.min_harvest_stage - config.HARVEST_STAGE_ROLLBACK,
+        bed.growth_stage - balance.HARVEST_STAGE_ROLLBACK,
+        bed.plant.min_harvest_stage - balance.HARVEST_STAGE_ROLLBACK,
     )
     bed.last_harvested_at = datetime.utcnow()
-    bed.recovery_until = datetime.utcnow() + timedelta(hours=config.RECOVERY_HOURS)
+    bed.recovery_until = datetime.utcnow() + timedelta(hours=balance.RECOVERY_HOURS)
 
     if bed.vitality <= 0:
         bed.vitality = 0  # смерть
