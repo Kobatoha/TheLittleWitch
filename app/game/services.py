@@ -58,8 +58,8 @@ def plant_seed(db: Session, player_id: int, plant_id: int) -> GardenBed:
         GardenBed.player_id == player_id,
         GardenBed.plant_id != None
     ).count()
-    if beds_count >= config.MAX_BEDS_PER_PLAYER:
-        raise ValueError(f"Максимум {config.MAX_BEDS_PER_PLAYER} грядок. Освободи одну!")
+    if beds_count >= balance.MAX_BEDS_PER_PLAYER:
+        raise ValueError(f"Максимум {balance.MAX_BEDS_PER_PLAYER} грядок. Освободи одну!")
 
     plant = db.query(Plant).filter(Plant.id == plant_id).first()
     if not plant:
@@ -142,7 +142,7 @@ def clean_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
 
     plant = bed.plant
 
-    bed.vitality = min(bed.vitality + 5, plant.base_vitality)
+    bed.vitality = min(bed.vitality + balance.WATER_VITALITY_BOOST, plant.base_vitality)
     bed.essence += 2
     bed.last_cleaned_at = datetime.utcnow()
 
@@ -354,4 +354,51 @@ def process_all_daily_updates(db: Session, player_id: int) -> list[GardenBed]:
             updated.append(bed)
     return updated
 
-    
+# === МАГАЗИН ===
+
+def sell_item(db: Session, player_id: int, inventory_id: int, sell_quantity: int = 1) -> dict:
+    """Продаёт предмет из инвентаря. Возвращает результат."""
+    inv = db.query(Inventory).filter(
+        Inventory.id == inventory_id,
+        Inventory.player_id == player_id,
+        Inventory.quantity > 0
+    ).first()
+    if not inv:
+        raise ValueError("Предмет не найден в инвентаре")
+    if sell_quantity > inv.quantity:
+        raise ValueError(f"Недостаточно предметов! У тебя {inv.quantity} шт.")
+
+    item = inv.item
+    total_price = item.sell_price * sell_quantity
+
+    # Списываем предмет
+    inv.quantity -= sell_quantity
+    if inv.quantity <= 0:
+        db.delete(inv)
+
+    # Добавляем монеты игроку
+    player = db.query(Player).filter(Player.id == player_id).first()
+    if not player:
+        raise ValueError("Игрок не найден")
+    player.coins += total_price
+
+    db.commit()
+
+    return {
+        "item_name": item.name,
+        "quantity_sold": sell_quantity,
+        "price_per_item": item.sell_price,
+        "total_coins_earned": total_price,
+        "coins_now": player.coins,
+        "remaining_quantity": inv.quantity if inv.quantity > 0 else 0
+    }
+
+
+def get_player_items_for_shop(db: Session, player_id: int) -> list:
+    """Возвращает все предметы игрока для отображения в магазине."""
+    items = db.query(Inventory).filter(
+        Inventory.player_id == player_id,
+        Inventory.quantity > 0
+    ).order_by(Inventory.item.has(Item.item_type == "rare").desc(),
+               Inventory.item.has(Item.sell_price).desc()).all()
+    return items

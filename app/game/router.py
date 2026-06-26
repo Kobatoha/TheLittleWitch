@@ -18,6 +18,7 @@ from app.game.utils import format_dt
 from app.models.plant import Plant
 from app.models.item import Item
 from app.models.inventory import Inventory
+from app.models.player import Player
 
 
 router = APIRouter()
@@ -110,6 +111,7 @@ def garden_page(request: Request, db: Session = Depends(get_db)):
             Inventory.item_id == spark_item.id
         ).all()
         spark_count = sum(inv.quantity for inv in spark_invs)
+    player = db.query(Player).filter(Player.id == TEMP_PLAYER_ID).first()    
 
     return templates.TemplateResponse("garden.html", {
         "request": request,
@@ -117,6 +119,7 @@ def garden_page(request: Request, db: Session = Depends(get_db)):
         "plants": plants,
         "now": datetime.utcnow(),
         "spark_count": spark_count,
+        "coins": player.coins if player else 0,
     })
 
 

@@ -14,6 +14,7 @@ class Item(Base):
     description = Column(String, nullable=True)
     potency_boost = Column(Integer, default=0)  # бонус к Силе Рода (для семян)
     icon = Column(String, nullable=True)
+    sell_price = Column(Integer, default=10)
 
     def __str__(self):
         return f"{self.name} ({self.item_type}, {self.rarity})"

@@ -11,6 +11,7 @@ from app.core.balance import QUALITY_NORMAL
 from app.core.database import get_db
 from app.game.utils import format_dt
 from app.models.inventory import Inventory
+from app.models.player import Player
 
 
 router = APIRouter()
@@ -51,6 +52,7 @@ def inventory_page(request: Request, db: Session = Depends(get_db)):
             consumables.append(item_data)
 
     spark_count = sum(c["quantity"] for c in consumables if c["item_name"] == "Искра Роста")
+    player = db.query(Player).filter(Player.id == TEMP_PLAYER_ID).first()
 
     return templates.TemplateResponse("inventory.html", {
         "request": request,
@@ -59,5 +61,6 @@ def inventory_page(request: Request, db: Session = Depends(get_db)):
         "rares": rares,
         "consumables": consumables,
         "spark_count": spark_count,
-        "total_items": len(inventory_items)
+        "total_items": len(inventory_items),
+        "coins": player.coins if player else 0,
     })

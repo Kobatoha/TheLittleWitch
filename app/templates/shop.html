@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лавка ведьмочки</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --border: #2a2a4a;
+            --text: #e0d8f0;
+            --muted: #7a7a9e;
+            --accent: #c9b1ff;
+            --gold: #ffd700;
+            --cell-bg: #1e1e3a;
+            --cell-hover: #2a2a50;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header h1 { color: var(--accent); font-size: 24px; }
+        .header a { color: var(--accent); text-decoration: none; font-size: 14px; }
+        .header a:hover { text-decoration: underline; }
+        .coins {
+            background: #2d1b10;
+            color: var(--gold);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        /* Сетка предметов */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        .shop-card {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: border-color 0.3s;
+        }
+        .shop-card:hover { border-color: #5a5a80; }
+        .shop-card .icon { font-size: 36px; }
+        .shop-card .name {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--accent);
+            min-height: 36px;
+        }
+        .shop-card .info {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .shop-card .price {
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 16px;
+        }
+        .shop-card button {
+            background: #2d1b10;
+            color: var(--gold);
+            border: 1px solid #5a3a20;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .shop-card button:hover {
+            background: #4a2a18;
+            border-color: #8a5a30;
+        }
+        .shop-card button:disabled {
+            background: #1a1a2a;
+            color: #555;
+            cursor: not-allowed;
+            border-color: #2a2a30;
+        }
+
+        .msg { text-align: center; margin-top: 15px; font-size: 14px; min-height: 22px; padding: 10px; border-radius: 8px; }
+        .msg-success { color: #7fdb7f; background: #0f1f0f; }
+        .msg-error { color: #f66; background: #1f0f0f; }
+
+        .empty { text-align: center; color: #666; padding: 40px; }
+        .empty .icon { font-size: 48px; margin-bottom: 10px; }
+
+        .quality-Увядший { color: #999; }
+        .quality-Обычный { color: #ccc; }
+        .quality-Сочный { color: #7fdb7f; }
+        .quality-Искрящийся { color: var(--gold); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🏪 Лавка ведьмочки</h1>
+                <a href="/api/game/garden/page">← В сад</a> •
+                <a href="/api/game/inventory">🎒 Инвентарь</a>
+            </div>
+            <div class="coins">💰 {{ coins }} монет</div>
+        </div>
+
+        {% if items %}
+        <div class="shop-grid">
+            {% for item in items %}
+            <div class="shop-card" id="card-{{ item.id }}">
+                <div class="icon">
+                    {% if item.item_type == "ingredient" %}🌿
+                    {% elif item.item_type == "bonus" %}🎁
+                    {% elif item.item_type == "rare" %}🌟
+                    {% elif item.item_type == "consumable" %}⚡
+                    {% else %}📦{% endif %}
+                </div>
+                <div class="name">{{ item.item_name }}</div>
+                <div class="info">
+                    <span class="quality-{{ item.quality }}">{{ item.quality }}</span> • {{ item.quantity }} шт.
+                </div>
+                <div class="price">💰 {{ item.sell_price }}</div>
+                <button onclick="sellItem('{{ item.id }}')">Продать 1 шт.</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty">
+            <div class="icon">🏪</div>
+            <p>Нечего продавать. Вырасти урожай в саду!</p>
+        </div>
+        {% endif %}
+
+        <div class="msg" id="message"></div>
+    </div>
+
+    <script>
+        function showMessage(text, type) {
+            const msg = document.getElementById("message");
+            msg.textContent = text;
+            msg.className = "msg " + (type === "success" ? "msg-success" : "msg-error");
+        }
+
+        async function sellItem(invId) {
+            showMessage("Продаём...", "");
+            try {
+                const r = await fetch("/api/game/shop/sell", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ inventory_id: invId, quantity: 1 })
+                });
+                if (r.ok) {
+                    const d = await r.json();
+                    showMessage(`✅ Продано! +${d.total_coins_earned}💰 (всего: ${d.coins_now}💰)`, "success");
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    const e = await r.json();
+                    showMessage("❌ " + e.detail, "error");
+                }
+            } catch {
+                showMessage("❌ Ошибка соединения", "error");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -6,6 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.admin import setup_admin
 from app.game.router import router as garden_router
 from app.game.inventory_router import router as inventory_router
+from app.game.shop_router import router as shop_router
 from app.core.config import SECRET_KEY
 
 
@@ -24,6 +25,7 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 setup_admin(app)
 app.include_router(garden_router, prefix="/api/game", tags=["garden"])
 app.include_router(inventory_router, prefix="/api/game", tags=["inventory"])
+app.include_router(shop_router, prefix="/api/game", tags=["shop"])
 
 
 @app.get("/")
