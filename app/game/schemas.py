@@ -90,3 +90,13 @@ class CleanResultOut(BaseModel):
     plant_name: str
     vitality: int
     essence: int
+
+class MoonBathRequest(BaseModel):
+    bed_id: int
+
+class MoonBathResultOut(BaseModel):
+    ok: bool = True
+    plant_name: str
+    vitality: int
+    essence: int
+    

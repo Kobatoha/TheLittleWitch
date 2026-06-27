@@ -56,6 +56,7 @@ def bed_to_dict(bed):
         "planted_at": format_dt(bed.planted_at),
         "can_clean": bed.can_clean,
         "essence_bar_max": balance.ESSENCE_BAR_MAX,
+        "can_moon_bath": bed.can_moon_bath,
     }
 
 # === API ===
@@ -150,6 +151,19 @@ def use_growth_spark(request: UseItemRequest, db: Session = Depends(get_db)):
 def clean_bed(request: schemas.CleanRequest, db: Session = Depends(get_db)):
     try:
         bed = services.clean_bed(db, TEMP_PLAYER_ID, request.bed_id)
+        return {
+            "ok": True,
+            "plant_name": bed.plant_name,
+            "vitality": bed.vitality,
+            "essence": bed.essence
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/garden/moon-bath", response_model=schemas.MoonBathResultOut)
+def moon_bath(request: schemas.MoonBathRequest, db: Session = Depends(get_db)):
+    try:
+        bed = services.moon_bath(db, TEMP_PLAYER_ID, request.bed_id)
         return {
             "ok": True,
             "plant_name": bed.plant_name,

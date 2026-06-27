@@ -402,3 +402,35 @@ def get_player_items_for_shop(db: Session, player_id: int) -> list:
     ).order_by(Inventory.item.has(Item.item_type == "rare").desc(),
                Inventory.item.has(Item.sell_price).desc()).all()
     return items
+
+# === ЛУННАЯ ВАННА ===
+
+def moon_bath(db: Session, player_id: int, bed_id: int) -> GardenBed:
+    """Лунная ванна: +10 Живучести, +15 Эссенции. Раз в 3 дня."""
+    bed = db.query(GardenBed).filter(
+        GardenBed.id == bed_id,
+        GardenBed.player_id == player_id
+    ).first()
+    if not bed:
+        raise ValueError("Грядка не найдена")
+    if bed.plant_id is None:
+        raise ValueError("На грядке ничего не растёт")
+    if bed.is_dead:
+        raise ValueError("Растение погибло.")
+    if not bed.can_moon_bath:
+        if bed.last_moon_bath_at:
+            next_bath = bed.last_moon_bath_at + timedelta(days=balance.MOON_BATH_COOLDOWN_DAYS)
+            hours_left = int((next_bath - datetime.utcnow()).total_seconds() / 3600)
+            raise ValueError(f"Лунная ванна будет доступна через {hours_left} ч.")
+        raise ValueError("Лунная ванна недоступна.")
+
+    plant = bed.plant
+
+    bed.vitality = min(bed.vitality + balance.MOON_BATH_VITALITY_BOOST, plant.base_vitality + 10)  # можно чуть выше базы
+    bed.essence += balance.MOON_BATH_ESSENCE_BOOST
+    bed.last_moon_bath_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(bed)
+    return bed
+    

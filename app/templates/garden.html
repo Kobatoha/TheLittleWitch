@@ -302,6 +302,10 @@
                                 {% if spark_count == 0 or bed.growth_stage >= 100 %}disabled{% endif %}>
                             ⚡
                         </button>
+                        <button class="btn" onclick="moonBath('{{ bed.id }}')"
+                                {% if not bed.can_moon_bath %}disabled{% endif %}>
+                            🌙
+                        </button>
                         {% if bed.can_harvest %}
                         <button class="btn harvest" onclick="harvestBed('{{ bed.id }}')">
                             🧺
@@ -437,6 +441,26 @@
                 if (r.ok) {
                     const d = await r.json();
                     showMessage(`🧹 Прополото! Живучесть: ${d.vitality}%, Эссенция: ${d.essence}`, "success");
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    const e = await r.json();
+                    showMessage("❌ " + e.detail, "error");
+                }
+            } catch {
+                showMessage("❌ Ошибка соединения", "error");
+            }
+        }
+        async function moonBath(bedId) {
+            showMessage("Устраиваем лунную ванну...", "");
+            try {
+                const r = await fetch("/api/game/garden/moon-bath", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ bed_id: bedId })
+                });
+                if (r.ok) {
+                    const d = await r.json();
+                    showMessage(`🌙 Лунная ванна! Живучесть: ${d.vitality}%, Эссенция: ${d.essence}`, "success");
                     setTimeout(() => location.reload(), 1200);
                 } else {
                     const e = await r.json();

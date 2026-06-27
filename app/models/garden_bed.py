@@ -23,11 +23,13 @@ class GardenBed(Base):
     growth_stage = Column(Integer, default=0)          # Цикл Роста: 0-100
 
     # Восстановление и лимиты
-    last_watered_at = Column(DateTime, nullable=True)      # когда последний раз поливали
-    last_cleaned_at = Column(DateTime, nullable=True)  # когда последний раз пололи
+    last_watered_at = Column(DateTime, nullable=True)       # когда последний раз поливали
+    last_cleaned_at = Column(DateTime, nullable=True)       # когда последний раз пололи
     last_harvested_at = Column(DateTime, nullable=True)     # когда последний раз собирали
+    last_moon_bath_at = Column(DateTime, nullable=True)     # когда последний раз была лунная ванна
+
     recovery_until = Column(DateTime, nullable=True)        # до какого времени растение восстанавливается
-    last_daily_update = Column(DateTime, nullable=True)  # когда было последнее ежедневное обновление
+    last_daily_update = Column(DateTime, nullable=True)     # когда было последнее ежедневное обновление
     
     planted_at = Column(DateTime, server_default=func.now())  # когда посадили (для истории)
     created_at = Column(DateTime, server_default=func.now())
@@ -96,5 +98,21 @@ class GardenBed(Base):
             return False
         if self.last_cleaned_at and self.last_cleaned_at.date() >= datetime.utcnow().date():
             return False
+        return True
+
+    
+    @property
+    def can_moon_bath(self) -> bool:
+        """Можно ли устроить лунную ванну: раз в 3 дня."""
+        if self.is_dead:
+            return False
+        if self.plant_id is None:
+            return False
+        if self.recovery_until and self.recovery_until > datetime.utcnow():
+            return False
+        if self.last_moon_bath_at:
+            next_bath = self.last_moon_bath_at + timedelta(days=3)
+            if datetime.utcnow() < next_bath:
+                return False
         return True
         
