@@ -11,9 +11,11 @@ from fastapi.templating import Jinja2Templates
 from app.core.database import get_db
 from app.core import balance
 from app.core.config import TEMP_PLAYER_ID
+
 from app.game import services
 from app.game import schemas
 from app.game.utils import format_dt
+from app.game.moon import get_moon_phase
 
 from app.models.plant import Plant
 from app.models.item import Item
@@ -172,3 +174,9 @@ def moon_bath(request: schemas.MoonBathRequest, db: Session = Depends(get_db)):
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/moon")
+def moon_info():
+    moon = get_moon_phase()
+    return moon
+    

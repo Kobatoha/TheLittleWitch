@@ -8,6 +8,7 @@ from app.core import balance
 
 from app.game import formulas
 from app.game.utils import format_dt
+from app.game.moon import get_essence_bonus_for_night
 
 from app.models.garden_bed import GardenBed
 from app.models.inventory import Inventory
@@ -306,16 +307,23 @@ def process_daily_update(db: Session, bed: GardenBed) -> GardenBed:
         bed.last_daily_update = now
         return bed
 
-    # === БЫЛ ЛИ ПОЛИВ ВЧЕРА? ===
-    yesterday = now - timedelta(hours=24)
+    # === ЭССЕНЦИЯ ЗА НОЧЬ ===
+    # Базовый бонус от луны
+    moon_bonus = get_essence_bonus_for_night(now.date())
+
+    # Если вчера был полив — эссенция не падает + бонус луны
     was_watered = (
-        bed.last_watered_at is not None 
-        and bed.last_watered_at >= yesterday
+        bed.last_watered_at is not None
+        and bed.last_watered_at.date() >= (now - timedelta(hours=24)).date()
     )
 
-    # === ЭССЕНЦИЯ ===
-    essence_decay = formulas.calculate_night_essence_decay(bed.essence, was_watered)
-    bed.essence = max(bed.essence - essence_decay, 0)
+    if was_watered:
+        # Эссенция сохраняется + бонус луны
+        bed.essence += moon_bonus
+    else:
+        # Эссенция падает на %, но бонус луны всё равно добавляется
+        essence_decay = formulas.calculate_night_essence_decay(bed.essence, False)
+        bed.essence = max(bed.essence - essence_decay + moon_bonus, 0)
 
     # === ЖИВУЧЕСТЬ (в Зените не падает) ===
     if not bed.is_in_zenith:

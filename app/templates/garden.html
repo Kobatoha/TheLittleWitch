@@ -231,6 +231,9 @@
             <h1>🌱 Ведьмин Сад</h1>
             <a href="/api/game/inventory">🎒 Инвентарь</a>
             <span class="spark-badge">⚡ {{ spark_count }}</span>
+            <span class="moon-badge" id="moonBadge" onclick="showMoonInfo()" style="cursor:pointer;">
+                🌕 Полнолуние
+            </span>
             <a href="/api/game/shop">🏪 Лавка</a>
             <span class="spark-badge">💰 {{ coins }}</span>
         </div>
@@ -470,6 +473,27 @@
                 showMessage("❌ Ошибка соединения", "error");
             }
         }
+        async function showMoonInfo() {
+            try {
+                const r = await fetch("/api/game/moon");
+                const moon = await r.json();
+                showMessage(
+                    `${moon.emoji} ${moon.name} | Эссенция tonight: +${moon.essence_bonus} | До полнолуния: ${moon.days_to_full_moon} дн.`,
+                    "success"
+                );
+            } catch {
+                showMessage("❌ Не удалось узнать фазу луны", "error");
+            }
+        }
+
+        // Обновим значок при загрузке
+        (async function() {
+            try {
+                const r = await fetch("/api/game/moon");
+                const moon = await r.json();
+                document.getElementById("moonBadge").textContent = `${moon.emoji} ${moon.name}`;
+            } catch {}
+        })();
     </script>
 </body>
 </html>
