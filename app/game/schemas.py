@@ -99,4 +99,7 @@ class MoonBathResultOut(BaseModel):
     plant_name: str
     vitality: int
     essence: int
+    moon_phase: str = ""
+    moon_emoji: str = ""
+    bonus: int = 0
     

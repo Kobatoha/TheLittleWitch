@@ -454,7 +454,7 @@
             }
         }
         async function moonBath(bedId) {
-            showMessage("Устраиваем лунную ванну...", "");
+            showMessage("Выставляем под луну...", "");
             try {
                 const r = await fetch("/api/game/garden/moon-bath", {
                     method: "POST",
@@ -463,8 +463,8 @@
                 });
                 if (r.ok) {
                     const d = await r.json();
-                    showMessage(`🌙 Лунная ванна! Живучесть: ${d.vitality}%, Эссенция: ${d.essence}`, "success");
-                    setTimeout(() => location.reload(), 1200);
+                    showMessage(`${d.moon_emoji} Лунная ванна! (${d.moon_phase}) | +${d.bonus} эссенции`, "success");
+                    setTimeout(() => location.reload(), 1500);
                 } else {
                     const e = await r.json();
                     showMessage("❌ " + e.detail, "error");

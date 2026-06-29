@@ -8,7 +8,7 @@ from app.core import balance
 
 from app.game import formulas
 from app.game.utils import format_dt
-from app.game.moon import get_essence_bonus_for_night
+from app.game.moon import get_essence_bonus_for_night, get_moon_phase
 
 from app.models.garden_bed import GardenBed
 from app.models.inventory import Inventory
@@ -271,6 +271,7 @@ def use_growth_spark(db: Session, player_id: int, bed_id: int) -> GardenBed:
     bed.last_watered_at = None
     bed.last_cleaned_at = None
     bed.recovery_until = None
+    bed.last_moon_bath_at = None
 
     # Рост
     bed.growth_stage = min(bed.growth_stage + balance.SPARK_GROWTH_PERCENT, 100)
@@ -308,22 +309,12 @@ def process_daily_update(db: Session, bed: GardenBed) -> GardenBed:
         return bed
 
     # === ЭССЕНЦИЯ ЗА НОЧЬ ===
-    # Базовый бонус от луны
-    moon_bonus = get_essence_bonus_for_night(now.date())
-
-    # Если вчера был полив — эссенция не падает + бонус луны
     was_watered = (
         bed.last_watered_at is not None
         and bed.last_watered_at.date() >= (now - timedelta(hours=24)).date()
     )
-
-    if was_watered:
-        # Эссенция сохраняется + бонус луны
-        bed.essence += moon_bonus
-    else:
-        # Эссенция падает на %, но бонус луны всё равно добавляется
-        essence_decay = formulas.calculate_night_essence_decay(bed.essence, False)
-        bed.essence = max(bed.essence - essence_decay + moon_bonus, 0)
+    essence_decay = formulas.calculate_night_essence_decay(bed.essence, was_watered)
+    bed.essence = max(bed.essence - essence_decay, 0)
 
     # === ЖИВУЧЕСТЬ (в Зените не падает) ===
     if not bed.is_in_zenith:
@@ -414,7 +405,7 @@ def get_player_items_for_shop(db: Session, player_id: int) -> list:
 # === ЛУННАЯ ВАННА ===
 
 def moon_bath(db: Session, player_id: int, bed_id: int) -> GardenBed:
-    """Лунная ванна: +10 Живучести, +15 Эссенции. Раз в 3 дня."""
+    """Выставить растение под лунный свет. Бонус зависит от фазы луны. Раз в сутки."""
     bed = db.query(GardenBed).filter(
         GardenBed.id == bed_id,
         GardenBed.player_id == player_id
@@ -425,17 +416,24 @@ def moon_bath(db: Session, player_id: int, bed_id: int) -> GardenBed:
         raise ValueError("На грядке ничего не растёт")
     if bed.is_dead:
         raise ValueError("Растение погибло.")
-    if not bed.can_moon_bath:
-        if bed.last_moon_bath_at:
-            next_bath = bed.last_moon_bath_at + timedelta(days=balance.MOON_BATH_COOLDOWN_DAYS)
-            hours_left = int((next_bath - datetime.utcnow()).total_seconds() / 3600)
-            raise ValueError(f"Лунная ванна будет доступна через {hours_left} ч.")
-        raise ValueError("Лунная ванна недоступна.")
+    if bed.recovery_until and bed.recovery_until > datetime.utcnow():
+        raise ValueError(f"Растение восстанавливается до {bed.recovery_until.strftime('%d.%m.%Y %H:%M')}")
+
+    # Дневной лимит
+    if bed.last_moon_bath_at and bed.last_moon_bath_at.date() >= datetime.utcnow().date():
+        raise ValueError("Лунная ванна уже была сегодня. Жди завтра!")
 
     plant = bed.plant
+    moon = get_moon_phase()
+    bonus = moon["essence_bonus"]
 
-    bed.vitality = min(bed.vitality + balance.MOON_BATH_VITALITY_BOOST, plant.base_vitality + 10)  # можно чуть выше базы
-    bed.essence += balance.MOON_BATH_ESSENCE_BOOST
+    if bonus == 0:
+        raise ValueError(f"{moon['emoji']} Сегодня {moon['name']} — лунный свет слишком слаб. Приходи в полнолуние!")
+
+    # Бонус живучести и эссенции зависит от фазы
+    vitality_bonus = bonus // 2  # половина от бонуса эссенции
+    bed.vitality = min(bed.vitality + vitality_bonus, plant.base_vitality + 10)
+    bed.essence += bonus
     bed.last_moon_bath_at = datetime.utcnow()
 
     db.commit()

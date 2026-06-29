@@ -166,11 +166,15 @@ def clean_bed(request: schemas.CleanRequest, db: Session = Depends(get_db)):
 def moon_bath(request: schemas.MoonBathRequest, db: Session = Depends(get_db)):
     try:
         bed = services.moon_bath(db, TEMP_PLAYER_ID, request.bed_id)
+        moon = get_moon_phase()
         return {
             "ok": True,
             "plant_name": bed.plant_name,
             "vitality": bed.vitality,
-            "essence": bed.essence
+            "essence": bed.essence,
+            "moon_phase": moon["name"],
+            "moon_emoji": moon["emoji"],
+            "bonus": moon["essence_bonus"]
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

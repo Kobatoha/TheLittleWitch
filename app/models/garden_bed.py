@@ -99,20 +99,16 @@ class GardenBed(Base):
         if self.last_cleaned_at and self.last_cleaned_at.date() >= datetime.utcnow().date():
             return False
         return True
-
-    
+        
     @property
     def can_moon_bath(self) -> bool:
-        """Можно ли устроить лунную ванну: раз в 3 дня."""
+        """Можно ли выставить под лунный свет: раз в сутки, не умерло, не на восстановлении."""
         if self.is_dead:
             return False
         if self.plant_id is None:
             return False
         if self.recovery_until and self.recovery_until > datetime.utcnow():
             return False
-        if self.last_moon_bath_at:
-            next_bath = self.last_moon_bath_at + timedelta(days=3)
-            if datetime.utcnow() < next_bath:
-                return False
+        if self.last_moon_bath_at and self.last_moon_bath_at.date() >= datetime.utcnow().date():
+            return False
         return True
-        
