@@ -21,6 +21,8 @@ from app.models.plant import Plant
 from app.models.item import Item
 from app.models.inventory import Inventory
 from app.models.player import Player
+from app.models.garden_bed import GardenBed
+from app.models.care_log import CareLog
 
 
 router = APIRouter()
@@ -188,7 +190,7 @@ def moon_info():
 def plant_page(request: Request, bed_id: int, db: Session = Depends(get_db)):
     bed = db.query(GardenBed).filter(
         GardenBed.id == bed_id,
-        GardenBed.player_id == config.TEMP_PLAYER_ID
+        GardenBed.player_id == TEMP_PLAYER_ID
     ).first()
     if not bed:
         raise HTTPException(status_code=404, detail="Грядка не найдена")
@@ -212,7 +214,7 @@ def plant_page(request: Request, bed_id: int, db: Session = Depends(get_db)):
     spark_count = 0
     if spark_item:
         spark_inv = db.query(Inventory).filter(
-            Inventory.player_id == config.TEMP_PLAYER_ID,
+            Inventory.player_id == TEMP_PLAYER_ID,
             Inventory.item_id == spark_item.id
         ).first()
         if spark_inv:

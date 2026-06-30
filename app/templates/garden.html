@@ -241,11 +241,12 @@
         <!-- Сетка грядок -->
         <div class="garden-grid" id="gardenGrid">
             {% for bed in beds %}
-            <a href="/api/game/garden/plant/{{ bed.id }}" style="text-decoration:none; color:inherit;">
-                <div class="bed-card {% if bed.is_dead %}dead{% elif bed.can_harvest %}ready{% elif not bed.plant_name %}empty{% endif %}"
-                    id="bed-{{ bed.id }}">
+            <div class="bed-card {% if bed.is_dead %}dead{% elif bed.can_harvest %}ready{% elif not bed.plant_name %}empty{% endif %}"
+                id="bed-{{ bed.id }}">
 
-                    {% if bed.plant_name %}
+                {% if bed.plant_name %}
+                    <!-- Кликабельная часть -->
+                    <a href="/api/game/garden/plant/{{ bed.id }}" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:10px; flex:1;">
                         <div class="plant-icon">
                             {% if bed.stage_name == "Семя" %}🌰
                             {% elif bed.stage_name == "Росток" %}🌱
@@ -284,45 +285,58 @@
                             </div>
                         </div>
 
+                        <!-- Индикаторы ухода -->
+                        <div style="display:flex; gap:8px; justify-content:center; font-size:14px;">
+                            <span title="Очистка" style="opacity:{{ 1 if bed.can_clean else 0.25 }}">🧹</span>
+                            <span title="Полив" style="opacity:{{ 1 if bed.can_water else 0.25 }}">💧</span>
+                            <span title="Лунная ванна" style="opacity:{{ 1 if bed.can_moon_bath else 0.25 }}">🌙</span>
+                            {% if bed.can_harvest %}
+                            <span title="Готово к сбору!">🧺</span>
+                            {% endif %}
+                        </div>
+
                         <!-- Статус -->
                         {% if bed.is_dead %}
                             <div style="text-align:center; color:#c04040; font-size:13px;">💀 Погибло</div>
                         {% elif bed.recovery_until and bed.recovery_until > now %}
                             <div style="text-align:center; font-size:11px; color:var(--muted);">💤 Восст. до {{ bed.recovery_until_str }}</div>
                         {% endif %}
+                    </a>
 
-                        <!-- Кнопки -->
-                        {% if not bed.is_dead and not (bed.recovery_until and bed.recovery_until > now) %}
-                        <div class="btn-row">
-                            <button class="btn" onclick="cleanBed('{{ bed.id }}')"
-                                    {% if not bed.can_clean %}disabled{% endif %}>
-                                🧹
-                            </button>
-                            <button class="btn" onclick="waterBed('{{ bed.id }}')"
-                                    {% if not bed.can_water %}disabled{% endif %}>
-                                💧
-                            </button>
-                            <button class="btn" onclick="useSpark('{{ bed.id }}')"
-                                    {% if spark_count == 0 or bed.growth_stage >= 100 %}disabled{% endif %}>
-                                ⚡
-                            </button>
-                            <button class="btn" onclick="moonBath('{{ bed.id }}')"
-                                    {% if not bed.can_moon_bath %}disabled{% endif %}>
-                                🌙
-                            </button>
-                            {% if bed.can_harvest %}
-                            <button class="btn harvest" onclick="harvestBed('{{ bed.id }}')">
-                                🧺
-                            </button>
-                            {% endif %}
-                        </div>
+                    <!-- Кнопки (вне ссылки, чтобы работали) -->
+                    {% if not bed.is_dead and not (bed.recovery_until and bed.recovery_until > now) %}
+                    <div class="btn-row" onclick="event.stopPropagation()">
+                        <button class="btn" onclick="cleanBed('{{ bed.id }}')"
+                                {% if not bed.can_clean %}disabled{% endif %}>
+                            🧹
+                        </button>
+                        <button class="btn" onclick="waterBed('{{ bed.id }}')"
+                                {% if not bed.can_water %}disabled{% endif %}>
+                            💧
+                        </button>
+                        <button class="btn" onclick="useSpark('{{ bed.id }}')"
+                                {% if spark_count == 0 or bed.growth_stage >= 100 %}disabled{% endif %}>
+                            ⚡
+                        </button>
+                        <button class="btn" onclick="moonBath('{{ bed.id }}')"
+                                {% if not bed.can_moon_bath %}disabled{% endif %}>
+                            🌙
+                        </button>
+                        {% if bed.can_harvest %}
+                        <button class="btn harvest" onclick="harvestBed('{{ bed.id }}')">
+                            🧺
+                        </button>
                         {% endif %}
-
-                    {% else %}
-                        <div class="empty-text">Пустая грядка</div>
+                    </div>
                     {% endif %}
-                </div>
-            </a>
+
+                {% else %}
+                    <!-- Пустая грядка — кликабельная для посадки -->
+                    <a href="/api/game/garden/plant/{{ bed.id }}" style="text-decoration:none; color:inherit; flex:1; display:flex; align-items:center; justify-content:center;">
+                        <div class="empty-text">Пустая кадка<br><span style="font-size:11px;">Нажми, чтобы посадить</span></div>
+                    </a>
+                {% endif %}
+            </div>
             {% endfor %}
         </div>
 
