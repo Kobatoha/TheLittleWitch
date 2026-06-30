@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ plant_name }} — Колдовская оранжерея</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --border: #2a2a4a;
+            --text: #e0d8f0;
+            --muted: #7a7a9e;
+            --accent: #c9b1ff;
+            --gold: #ffd700;
+            --hp-color: #e06060;
+            --essence-color: #60c0e0;
+            --growth-color: #60e090;
+            --btn-bg: #2d1b3e;
+            --btn-hover: #4a2a5e;
+            --positive: #7fdb7f;
+            --negative: #f66;
+            --neutral: #ccc;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 700px; margin: 0 auto; }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .header a { color: var(--accent); text-decoration: none; font-size: 14px; }
+        .header h1 { font-size: 22px; color: var(--accent); }
+
+        .main-panel {
+            display: flex;
+            gap: 20px;
+        }
+        @media (max-width: 550px) { .main-panel { flex-direction: column; } }
+
+        /* Карточка растения */
+        .plant-card {
+            flex: 0 0 200px;
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+        .plant-icon { font-size: 56px; }
+        .plant-name { font-weight: 700; font-size: 18px; color: var(--accent); }
+        .stage-name { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+        .bar-row { display: flex; align-items: center; gap: 6px; width: 100%; font-size: 11px; }
+        .bar-icon { width: 18px; text-align: center; }
+        .bar-track { flex: 1; height: 10px; background: #1a1a30; border-radius: 5px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 4px; }
+        .bar-fill.hp { background: var(--hp-color); }
+        .bar-fill.essence { background: var(--essence-color); }
+        .bar-fill.growth { background: var(--growth-color); }
+        .bar-value { width: 30px; text-align: right; font-size: 10px; color: var(--muted); }
+
+        /* Кнопки ухода */
+        .btn-panel {
+            flex: 0 0 140px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .btn-care {
+            padding: 10px;
+            border: 1px solid #3a2a50;
+            border-radius: 10px;
+            background: var(--btn-bg);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .btn-care:hover { background: var(--btn-hover); }
+        .btn-care:disabled { background: #1a1a2a; color: #555; cursor: not-allowed; }
+
+        /* Лог */
+        .log-panel {
+            flex: 1;
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-panel h2 {
+            font-size: 16px;
+            color: #a0d2db;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #2a2a4a;
+            padding-bottom: 6px;
+        }
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid #1a1a30;
+            font-size: 13px;
+            display: flex;
+            gap: 8px;
+            align-items: baseline;
+        }
+        .log-time { color: var(--muted); font-size: 11px; min-width: 35px; }
+        .log-name { flex: 1; }
+        .log-effect { font-size: 11px; color: var(--muted); }
+        .log-details { font-size: 11px; color: #c9b1ff; font-style: italic; }
+        .mood-positive { color: var(--positive); }
+        .mood-negative { color: var(--negative); }
+
+        .empty-log { color: #555; text-align: center; padding: 20px; font-style: italic; }
+
+        .msg { text-align: center; margin-top: 12px; font-size: 14px; min-height: 22px; padding: 10px; border-radius: 8px; }
+        .msg-success { color: #7fdb7f; background: #0f1f0f; }
+        .msg-error { color: #f66; background: #1f0f0f; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/api/game/garden/page">← В оранжерею</a>
+            <h1>{{ plant_name }}</h1>
+        </div>
+
+        <div class="main-panel">
+            <!-- Карточка растения -->
+            <div class="plant-card" id="plantCard">
+                <div class="plant-icon">
+                    {% if bed.stage_name == "Семя" %}🌰
+                    {% elif bed.stage_name == "Росток" %}🌱
+                    {% elif bed.stage_name == "Стебель" %}🌿
+                    {% elif bed.stage_name == "Бутон" %}🌷
+                    {% elif bed.stage_name == "Цветение" %}🌸
+                    {% elif bed.stage_name == "Зрелость" %}🌻
+                    {% else %}🪴{% endif %}
+                </div>
+                <div class="plant-name">{{ plant_name }}</div>
+                <div class="stage-name">{{ bed.stage_name }}</div>
+                <div class="bar-row">
+                    <span class="bar-icon">❤️</span>
+                    <div class="bar-track"><div class="bar-fill hp" style="width:{{ bed.vitality if bed.vitality <= 100 else 100 }}%"></div></div>
+                    <span class="bar-value">{{ bed.vitality }}%</span>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-icon">✨</span>
+                    <div class="bar-track"><div class="bar-fill essence" style="width:{{ (bed.essence / 200 * 100) if bed.essence <= 200 else 100 }}%"></div></div>
+                    <span class="bar-value">{{ bed.essence }}</span>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-icon">🌱</span>
+                    <div class="bar-track"><div class="bar-fill growth" style="width:{{ bed.growth_stage }}%"></div></div>
+                    <span class="bar-value">{{ bed.growth_stage }}%</span>
+                </div>
+            </div>
+
+            <!-- Кнопки -->
+            <div class="btn-panel" id="btnPanel">
+                <button class="btn-care" onclick="doAction('{{ bed.id }}', 'clean')" {% if not bed.can_clean %}disabled{% endif %}>
+                    🧹 Очистить
+                </button>
+                <button class="btn-care" onclick="doAction('{{ bed.id }}', 'water')" {% if not bed.can_water %}disabled{% endif %}>
+                    💧 Оросить
+                </button>
+                <button class="btn-care" onclick="doAction('{{ bed.id }}', 'spark')" {% if spark_count == 0 or bed.growth_stage >= 100 %}disabled{% endif %}>
+                    ⚡ Искра
+                </button>
+                <button class="btn-care" onclick="doAction('{{ bed.id }}', 'moon')" {% if not bed.can_moon_bath %}disabled{% endif %}>
+                    🌙 Луна
+                </button>
+                {% if bed.can_harvest %}
+                <button class="btn-care" onclick="doAction('{{ bed.id }}', 'harvest')" style="border-color:#3a6030;">
+                    🧺 Собрать
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Лог -->
+            <div class="log-panel" id="logPanel">
+                <h2>📜 Хроники ухода</h2>
+                {% if logs %}
+                    {% for log in logs %}
+                    <div class="log-entry">
+                        <span class="log-time">{{ log.time }}</span>
+                        <span class="log-name mood-{{ log.mood }}">{{ log.action_name }}</span>
+                        <span class="log-effect">{{ log.effect }}</span>
+                        {% if log.details %}
+                        <span class="log-details">{{ log.details }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-log">Сегодня ещё ничего не происходило...</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="msg" id="message"></div>
+    </div>
+
+    <script>
+        function showMessage(text, type) {
+            const msg = document.getElementById("message");
+            msg.textContent = text;
+            msg.className = "msg " + (type === "success" ? "msg-success" : "msg-error");
+        }
+
+        async function doAction(bedId, action) {
+            const urls = {
+                'water': '/api/game/garden/water',
+                'clean': '/api/game/garden/clean',
+                'spark': '/api/game/garden/use-spark',
+                'moon': '/api/game/garden/moon-bath',
+                'harvest': '/api/game/garden/harvest'
+            };
+            const bodies = {
+                'water': { bed_id: bedId },
+                'clean': { bed_id: bedId },
+                'spark': { bed_id: bedId },
+                'moon': { bed_id: bedId },
+                'harvest': { bed_id: bedId }
+            };
+
+            showMessage("...", "");
+            try {
+                const r = await fetch(urls[action], {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(bodies[action])
+                });
+                if (r.ok) {
+                    showMessage("✅ Успешно!", "success");
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    const e = await r.json();
+                    showMessage("❌ " + e.detail, "error");
+                }
+            } catch {
+                showMessage("❌ Ошибка соединения", "error");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -15,6 +15,22 @@ from app.models.inventory import Inventory
 from app.models.item import Item
 from app.models.plant import Plant
 from app.models.player import Player
+from app.models.care_log import CareLog
+
+
+def log_action(db: Session, player_id: int, bed_id: int, action: str, action_name: str, effect: str, mood: str = "neutral", details: str = None):
+    """Записывает действие в лог ухода."""
+    log = CareLog(
+        garden_bed_id=bed_id,
+        player_id=player_id,
+        action=action,
+        action_name=action_name,
+        effect=effect,
+        mood=mood,
+        details=details
+    )
+    db.add(log)
+    db.commit()
 
 
 def add_item_to_inventory(db: Session, player_id: int, item_id: int, quantity: int = 1, quality: str = "Обычный", source_bed_id: int = None) -> Inventory:
@@ -46,7 +62,6 @@ def add_item_to_inventory(db: Session, player_id: int, item_id: int, quantity: i
 
 def get_player_garden(db: Session, player_id: int):
     return db.query(GardenBed).filter(GardenBed.player_id == player_id).all()
-
 
 # === ПОСАДКА ===
 
@@ -116,6 +131,11 @@ def water_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     bed.growth_stage = min(bed.growth_stage, 100)  # не двигаем, только если не формула
     bed.last_watered_at = datetime.utcnow()
 
+    log_action(db, player_id, bed.id, "water",
+    "Орошение лунной росой",
+    f"❤️+{balance.WATER_VITALITY_BOOST}% ✨+{plant.essence_per_care}",
+    "positive")
+
     db.commit()
     db.refresh(bed)
     return bed
@@ -146,6 +166,17 @@ def clean_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     bed.vitality = min(bed.vitality + balance.WATER_VITALITY_BOOST, plant.base_vitality)
     bed.essence += 2
     bed.last_cleaned_at = datetime.utcnow()
+
+    # Случайная находка (20% шанс)
+    details = None
+    if random.random() < 0.2:
+        findings = ["радужный пучеглаз", "сонная божья коровка", "крошка лунного камня", "пёрышко звёздной птицы"]
+        details = f"Найден(а) {random.choice(findings)}!"
+
+    log_action(db, player_id, bed.id, "clean",
+        "Очищение листьев",
+        f"❤️+5% ✨+2",
+        "positive", details)
 
     db.commit()
     db.refresh(bed)
@@ -233,6 +264,11 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
     if bed.vitality <= 0:
         bed.vitality = 0  # смерть
 
+    log_action(db, player_id, bed.id, "harvest",
+    "Сбор урожая",
+    f"🌿{main_multiplier}x {quality} | ❤️-{config.HARVEST_VITALITY_COST}%",
+    "positive")
+
     db.commit()
     return result
 
@@ -283,6 +319,11 @@ def use_growth_spark(db: Session, player_id: int, bed_id: int) -> GardenBed:
 
     if bed.vitality <= 0:
         bed.vitality = 0
+
+    log_action(db, player_id, bed.id, "spark",
+    "Вспышка Искры Роста",
+    f"🌱+{balance.SPARK_GROWTH_PERCENT}% стадии ❤️-{balance.SPARK_VITALITY_COST}%",
+    "neutral" if bed.vitality > 50 else "negative")
 
     db.commit()
     db.refresh(bed)
@@ -338,6 +379,11 @@ def process_daily_update(db: Session, bed: GardenBed) -> GardenBed:
 
     if bed.vitality <= 0:
         bed.vitality = 0  # смерть
+
+    log_action(db, bed.player_id, bed.id, "daily",
+    "Пробуждение",
+    f"🌱+{balance.DAILY_GROWTH_PERCENT}% стадии ❤️-{balance.NIGHT_VITALITY_COST}%",
+    "neutral")
 
     db.commit()
     return bed
@@ -435,6 +481,11 @@ def moon_bath(db: Session, player_id: int, bed_id: int) -> GardenBed:
     bed.vitality = min(bed.vitality + vitality_bonus, plant.base_vitality + 10)
     bed.essence += bonus
     bed.last_moon_bath_at = datetime.utcnow()
+
+    log_action(db, player_id, bed.id, "moon",
+    f"Лунная ванна ({moon['name']})",
+    f"❤️+{vitality_bonus}% ✨+{bonus}",
+    "positive" if bonus >= 10 else "neutral")
 
     db.commit()
     db.refresh(bed)

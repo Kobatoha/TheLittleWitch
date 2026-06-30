@@ -184,3 +184,46 @@ def moon_info():
     moon = get_moon_phase()
     return moon
     
+@router.get("/garden/plant/{bed_id}", response_class=HTMLResponse)
+def plant_page(request: Request, bed_id: int, db: Session = Depends(get_db)):
+    bed = db.query(GardenBed).filter(
+        GardenBed.id == bed_id,
+        GardenBed.player_id == config.TEMP_PLAYER_ID
+    ).first()
+    if not bed:
+        raise HTTPException(status_code=404, detail="Грядка не найдена")
+
+    logs = db.query(CareLog).filter(
+        CareLog.garden_bed_id == bed_id,
+        CareLog.created_at >= datetime.utcnow().replace(hour=0, minute=0, second=0)
+    ).order_by(CareLog.created_at.asc()).all()
+
+    logs_data = []
+    for log in logs:
+        logs_data.append({
+            "time": log.created_at.strftime("%H:%M"),
+            "action_name": log.action_name,
+            "effect": log.effect,
+            "mood": log.mood,
+            "details": log.details,
+        })
+
+    spark_item = db.query(Item).filter(Item.name == "Искра Роста").first()
+    spark_count = 0
+    if spark_item:
+        spark_inv = db.query(Inventory).filter(
+            Inventory.player_id == config.TEMP_PLAYER_ID,
+            Inventory.item_id == spark_item.id
+        ).first()
+        if spark_inv:
+            spark_count = spark_inv.quantity
+
+    return templates.TemplateResponse("plant_detail.html", {
+        "request": request,
+        "bed": bed_to_dict(bed),
+        "plant_name": bed.plant_name,
+        "logs": logs_data,
+        "spark_count": spark_count,
+        "now": datetime.utcnow()
+    })
+    
