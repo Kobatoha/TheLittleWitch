@@ -223,6 +223,42 @@
             font-size: 14px;
         }
         .plant-form .btn { flex: 0; padding: 10px 20px; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .header-left { display: flex; gap: 16px; align-items: center; }
+        .header-right { display: flex; gap: 10px; align-items: center; }
+        .header a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .header a:hover { text-decoration: underline; }
+        .header a.brand { font-size: 18px; font-weight: 700; }
+        .moon-badge {
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: #1a1a30;
+        }
+        .resource-badge {
+            background: #1a1a30;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #e0c0ff;
+        }
     </style>
 </head>
 <body>
@@ -241,50 +277,11 @@
         <!-- Сетка грядок -->
         <div class="garden-grid" id="gardenGrid">
             {% for bed in beds %}
-            <div class="bed-card {% if bed.is_dead %}dead{% elif bed.can_harvest %}ready{% elif not bed.plant_name %}empty{% endif %}"
-                id="bed-{{ bed.id }}">
-
+            <div class="bed-card ...">
                 {% if bed.plant_name %}
-                    <!-- Кликабельная часть -->
-                    <a href="/api/game/garden/plant/{{ bed.id }}" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:10px; flex:1;">
-                        <div class="plant-icon">
-                            {% if bed.stage_name == "Семя" %}🌰
-                            {% elif bed.stage_name == "Росток" %}🌱
-                            {% elif bed.stage_name == "Стебель" %}🌿
-                            {% elif bed.stage_name == "Бутон" %}🌷
-                            {% elif bed.stage_name == "Цветение" %}🌸
-                            {% elif bed.stage_name == "Зрелость" %}🌻
-                            {% else %}🪴
-                            {% endif %}
-                        </div>
-                        <div class="plant-name">{{ bed.plant_name }}</div>
-                        <div class="stage-label">{{ bed.stage_name }}</div>
-
-                        <!-- Бары -->
-                        <div class="bars">
-                            <div class="bar-row">
-                                <span class="bar-icon">❤️</span>
-                                <div class="bar-track">
-                                    <div class="bar-fill hp" style="width: {{ bed.vitality if bed.vitality <= 100 else 100 }}%"></div>
-                                </div>
-                                <span class="bar-value">{{ bed.vitality }}%</span>
-                            </div>
-                            <div class="bar-row">
-                                <span class="bar-icon">✨</span>
-                                <div class="bar-track">
-                                    <div class="bar-fill essence" style="width: {{ (bed.essence / bed.essence_bar_max * 100) if bed.essence <= bed.essence_bar_max else 100 }}%"></div>
-                                </div>
-                                <span class="bar-value">{{ bed.essence }}</span>
-                            </div>
-                            <div class="bar-row">
-                                <span class="bar-icon">🌱</span>
-                                <div class="bar-track">
-                                    <div class="bar-fill growth" style="width: {{ bed.growth_stage }}%"></div>
-                                </div>
-                                <span class="bar-value">{{ bed.growth_stage }}%</span>
-                            </div>
-                        </div>
-
+                    <a href="/api/game/garden/plant/{{ bed.id }}" style="...">
+                        <!-- иконка, имя, стадия, бары -->
+                        
                         <!-- Индикаторы ухода -->
                         <div style="display:flex; gap:8px; justify-content:center; font-size:14px;">
                             <span title="Очистка" style="opacity:{{ 1 if bed.can_clean else 0.25 }}">🧹</span>
@@ -294,46 +291,10 @@
                             <span title="Готово к сбору!">🧺</span>
                             {% endif %}
                         </div>
-
-                        <!-- Статус -->
-                        {% if bed.is_dead %}
-                            <div style="text-align:center; color:#c04040; font-size:13px;">💀 Погибло</div>
-                        {% elif bed.recovery_until and bed.recovery_until > now %}
-                            <div style="text-align:center; font-size:11px; color:var(--muted);">💤 Восст. до {{ bed.recovery_until_str }}</div>
-                        {% endif %}
                     </a>
-
-                    <!-- Кнопки (вне ссылки, чтобы работали) -->
-                    {% if not bed.is_dead and not (bed.recovery_until and bed.recovery_until > now) %}
-                    <div class="btn-row" onclick="event.stopPropagation()">
-                        <button class="btn" onclick="cleanBed('{{ bed.id }}')"
-                                {% if not bed.can_clean %}disabled{% endif %}>
-                            🧹
-                        </button>
-                        <button class="btn" onclick="waterBed('{{ bed.id }}')"
-                                {% if not bed.can_water %}disabled{% endif %}>
-                            💧
-                        </button>
-                        <button class="btn" onclick="useSpark('{{ bed.id }}')"
-                                {% if spark_count == 0 or bed.growth_stage >= 100 %}disabled{% endif %}>
-                            ⚡
-                        </button>
-                        <button class="btn" onclick="moonBath('{{ bed.id }}')"
-                                {% if not bed.can_moon_bath %}disabled{% endif %}>
-                            🌙
-                        </button>
-                        {% if bed.can_harvest %}
-                        <button class="btn harvest" onclick="harvestBed('{{ bed.id }}')">
-                            🧺
-                        </button>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-
                 {% else %}
-                    <!-- Пустая грядка — кликабельная для посадки -->
-                    <a href="/api/game/garden/plant/{{ bed.id }}" style="text-decoration:none; color:inherit; flex:1; display:flex; align-items:center; justify-content:center;">
-                        <div class="empty-text">Пустая кадка<br><span style="font-size:11px;">Нажми, чтобы посадить</span></div>
+                    <a href="/api/game/garden/plant/{{ bed.id }}" ...>
+                        <div class="empty-text">Пустая кадка<br>...</div>
                     </a>
                 {% endif %}
             </div>

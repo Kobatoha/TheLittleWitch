@@ -1,0 +1,32 @@
+<div class="header">
+    <div class="header-left">
+        <a href="/api/game/garden/page" class="brand">🌱 Оранжерея</a>
+        <a href="/api/game/shop">🏪 Лавка</a>
+        <a href="/api/game/inventory">🎒 Инвентарь</a>
+    </div>
+    <div class="header-right">
+        <span class="moon-badge" id="moonBadge" onclick="showMoonInfo()" title="Текущая фаза луны">
+            🌕
+        </span>
+        <span class="resource-badge">⚡ {{ spark_count }}</span>
+        <span class="resource-badge">💰 {{ coins }}</span>
+    </div>
+</div>
+
+<script>
+async function showMoonInfo() {
+    try {
+        const r = await fetch("/api/game/moon");
+        const moon = await r.json();
+        alert(`${moon.emoji} ${moon.name}\nЭссенция tonight: +${moon.essence_bonus}\nДо полнолуния: ${moon.days_to_full_moon} дн.`);
+    } catch {}
+}
+(async function() {
+    try {
+        const r = await fetch("/api/game/moon");
+        const moon = await r.json();
+        const badge = document.getElementById("moonBadge");
+        if (badge) badge.textContent = `${moon.emoji} ${moon.name}`;
+    } catch {}
+})();
+</script>

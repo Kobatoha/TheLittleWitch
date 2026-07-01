@@ -112,6 +112,42 @@
         .quality-Обычный { color: #ccc; }
         .quality-Сочный { color: #7fdb7f; }
         .quality-Искрящийся { color: var(--gold); }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .header-left { display: flex; gap: 16px; align-items: center; }
+        .header-right { display: flex; gap: 10px; align-items: center; }
+        .header a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .header a:hover { text-decoration: underline; }
+        .header a.brand { font-size: 18px; font-weight: 700; }
+        .moon-badge {
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: #1a1a30;
+        }
+        .resource-badge {
+            background: #1a1a30;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #e0c0ff;
+        }
     </style>
 </head>
 <body>

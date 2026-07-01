@@ -319,6 +319,13 @@ def use_growth_spark(db: Session, player_id: int, bed_id: int) -> GardenBed:
 
     if bed.vitality <= 0:
         bed.vitality = 0
+    
+    # Очищаем логи за сегодня (новый день с искрой)
+    db.query(CareLog).filter(
+        CareLog.garden_bed_id == bed.id,
+        CareLog.created_at >= datetime.utcnow().replace(hour=0, minute=0, second=0)
+    ).delete()
+    db.commit()
 
     log_action(db, player_id, bed.id, "spark",
     "Вспышка Искры Роста",
@@ -379,6 +386,13 @@ def process_daily_update(db: Session, bed: GardenBed) -> GardenBed:
 
     if bed.vitality <= 0:
         bed.vitality = 0  # смерть
+
+    # Очищаем логи за сегодня (новый день с искрой)
+    db.query(CareLog).filter(
+        CareLog.garden_bed_id == bed.id,
+        CareLog.created_at >= datetime.utcnow().replace(hour=0, minute=0, second=0)
+    ).delete()
+    db.commit()
 
     log_action(db, bed.player_id, bed.id, "daily",
     "Пробуждение",
