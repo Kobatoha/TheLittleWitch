@@ -39,7 +39,8 @@ def inventory_page(request: Request, db: Session = Depends(get_db)):
             "quality": inv.quality if inv.quality else QUALITY_NORMAL,
             "quantity": inv.quantity,
             "description": inv.item.description or "",
-            "created_at": format_dt(inv.created_at)
+            "created_at": format_dt(inv.created_at),
+            "icon": inv.item.icon,
         }
 
         if inv.item.item_type == "ingredient":

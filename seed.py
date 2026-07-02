@@ -23,6 +23,7 @@ def seed_plants():
             growth_per_care=10,
             min_harvest_stage=70,
             base_potency=100,
+            icon="plants/lunar_lily/lily.png",
         ),
         Plant(
             name="Шипучка болотная",

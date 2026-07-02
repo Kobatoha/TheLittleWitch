@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.admin import setup_admin
@@ -20,6 +22,7 @@ app = FastAPI(
     description="FastAPI + SQLite + SQLAdmin",
     lifespan=lifespan,
 )
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 setup_admin(app)

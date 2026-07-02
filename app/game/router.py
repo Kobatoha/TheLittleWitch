@@ -61,6 +61,7 @@ def bed_to_dict(bed):
         "can_clean": bed.can_clean,
         "essence_bar_max": balance.ESSENCE_BAR_MAX,
         "can_moon_bath": bed.can_moon_bath,
+        "icon": bed.plant.icon if bed.plant and bed.plant.icon else None,
     }
 
 # === API ===

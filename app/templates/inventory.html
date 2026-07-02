@@ -299,11 +299,15 @@
                              id="cell-{{ item.id }}">
                             <span class="tooltip">{{ item.item_name }}</span>
                             <span>
-                                {% if item.item_type == "ingredient" %}🌿
-                                {% elif item.item_type == "bonus" %}🎁
-                                {% elif item.item_type == "rare" %}🌟
-                                {% elif item.item_type == "consumable" %}⚡
-                                {% else %}📦
+                                {% if item.icon %}
+                                    <img src="/static/{{ item.icon }}" style="width:32px; height:32px; object-fit:contain;">
+                                {% else %}
+                                    {% if item.item_type == "ingredient" %}🌿
+                                    {% elif item.item_type == "bonus" %}🎁
+                                    {% elif item.item_type == "rare" %}🌟
+                                    {% elif item.item_type == "consumable" %}⚡
+                                    {% else %}📦
+                                    {% endif %}
                                 {% endif %}
                             </span>
                             <span class="quantity">{{ item.quantity }}</span>

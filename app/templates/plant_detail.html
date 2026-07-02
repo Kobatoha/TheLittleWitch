@@ -218,13 +218,18 @@
             <!-- Карточка растения -->
             <div class="plant-card" id="plantCard">
                 <div class="plant-icon">
-                    {% if bed.stage_name == "Семя" %}🌰
-                    {% elif bed.stage_name == "Росток" %}🌱
-                    {% elif bed.stage_name == "Стебель" %}🌿
-                    {% elif bed.stage_name == "Бутон" %}🌷
-                    {% elif bed.stage_name == "Цветение" %}🌸
-                    {% elif bed.stage_name == "Зрелость" %}🌻
-                    {% else %}🪴{% endif %}
+                    {% if bed.icon %}
+                        <img src="/static/{{ bed.icon }}" alt="{{ plant_name }}" style="width:120px; height:120px; object-fit:contain; border-radius:16px;">
+                    {% else %}
+                        {% if bed.stage_name == "Семя" %}🌰
+                        {% elif bed.stage_name == "Росток" %}🌱
+                        {% elif bed.stage_name == "Стебель" %}🌿
+                        {% elif bed.stage_name == "Бутон" %}🌷
+                        {% elif bed.stage_name == "Цветение" %}🌸
+                        {% elif bed.stage_name == "Зрелость" %}🌻
+                        {% else %}🪴
+                        {% endif %}
+                    {% endif %}
                 </div>
                 <div class="plant-name">{{ plant_name }}</div>
                 <div class="stage-name">{{ bed.stage_name }}</div>
