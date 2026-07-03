@@ -92,17 +92,19 @@
 
         .plant-icon {
             width: 100%;
-            height: 80px;
+            height: 90%;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             border-radius: 12px;
+            margin-bottom: 4px;
         }
         .plant-icon img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
+            border-radius: 12px;
         }
         .plant-name {
             font-weight: 700;
@@ -292,7 +294,7 @@
                         <!-- иконка, имя, стадия, бары -->
                         <div class="plant-icon">
                             {% if bed.icon %}
-                                <img src="/static/{{ bed.icon }}" alt="{{ bed.plant_name }}" style="width:100%; height:100%; object-fit:contain; border-radius:12px;">
+                                <img src="/static/{{ bed.icon }}" alt="{{ bed.plant_name }}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">
                             {% else %}
                                 {% if bed.stage_name == "Семя" %}🌰
                                 {% elif bed.stage_name == "Росток" %}🌱

@@ -126,7 +126,7 @@ def water_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     plant = bed.plant
 
     # Восстановление живучести
-    bed.vitality = min(bed.vitality + balance.WATER_VITALITY_BOOST, plant.base_vitality)
+    bed.vitality = min(bed.vitality + balance.WATER_VITALITY_BOOST, max(plant.base_vitality, 100))
     bed.essence += plant.essence_per_care  # растение диктует прирост эссенции
     bed.growth_stage = min(bed.growth_stage, 100)  # не двигаем, только если не формула
     bed.last_watered_at = datetime.utcnow()
@@ -163,7 +163,7 @@ def clean_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
 
     plant = bed.plant
 
-    bed.vitality = min(bed.vitality + balance.WATER_VITALITY_BOOST, plant.base_vitality)
+    bed.vitality = min(bed.vitality + balance.WATER_VITALITY_BOOST, max(plant.base_vitality, 100))
     bed.essence += 2
     bed.last_cleaned_at = datetime.utcnow()
 
@@ -264,10 +264,22 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
     if bed.vitality <= 0:
         bed.vitality = 0  # смерть
 
+    # === ЛОГ СО ВСЕМ ЛУТОМ ===
+    loot_parts = []
+    for h in result["main_harvest"]:
+        loot_parts.append(f"{h['quantity']}x {h['name']} ({h['quality']})")
+    for b in result["bonus_harvest"]:
+        loot_parts.append(f"{b['name']}")
+    for r in result["rare_harvest"]:
+        loot_parts.append(f"🌟 {r['name']}")
+
+    details = " | ".join(loot_parts) if loot_parts else None
+
     log_action(db, player_id, bed.id, "harvest",
-    "Сбор урожая",
-    f"🌿{main_multiplier}x {quality} | ❤️-{config.HARVEST_VITALITY_COST}%",
-    "positive")
+        "Сбор урожая",
+        f"❤️-{balance.HARVEST_VITALITY_COST}% 🌱-{balance.HARVEST_STAGE_ROLLBACK}%",
+        "positive",
+        details)
 
     db.commit()
     return result
@@ -492,7 +504,7 @@ def moon_bath(db: Session, player_id: int, bed_id: int) -> GardenBed:
 
     # Бонус живучести и эссенции зависит от фазы
     vitality_bonus = bonus // 2  # половина от бонуса эссенции
-    bed.vitality = min(bed.vitality + vitality_bonus, plant.base_vitality + 10)
+    bed.vitality = min(bed.vitality + vitality_bonus, max(plant.base_vitality, 100))
     bed.essence += bonus
     bed.last_moon_bath_at = datetime.utcnow()
 

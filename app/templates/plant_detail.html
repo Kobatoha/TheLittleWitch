@@ -30,110 +30,13 @@
             min-height: 100vh;
             padding: 20px;
         }
-        .container { max-width: 700px; margin: 0 auto; }
+        .container { max-width: 500px; margin: 0 auto; }
+
+        /* Шапка */
         .header {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .header a { color: var(--accent); text-decoration: none; font-size: 14px; }
-        .header h1 { font-size: 22px; color: var(--accent); }
-
-        .main-panel {
-            display: flex;
-            gap: 20px;
-        }
-        @media (max-width: 550px) { .main-panel { flex-direction: column; } }
-
-        /* Карточка растения */
-        .plant-card {
-            flex: 0 0 200px;
-            background: var(--card-bg);
-            border: 2px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: center;
-        }
-        .plant-icon { font-size: 56px; }
-        .plant-name { font-weight: 700; font-size: 18px; color: var(--accent); }
-        .stage-name { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
-
-        .bar-row { display: flex; align-items: center; gap: 6px; width: 100%; font-size: 11px; }
-        .bar-icon { width: 18px; text-align: center; }
-        .bar-track { flex: 1; height: 10px; background: #1a1a30; border-radius: 5px; overflow: hidden; }
-        .bar-fill { height: 100%; border-radius: 4px; }
-        .bar-fill.hp { background: var(--hp-color); }
-        .bar-fill.essence { background: var(--essence-color); }
-        .bar-fill.growth { background: var(--growth-color); }
-        .bar-value { width: 30px; text-align: right; font-size: 10px; color: var(--muted); }
-
-        /* Кнопки ухода */
-        .btn-panel {
-            flex: 0 0 140px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .btn-care {
-            padding: 10px;
-            border: 1px solid #3a2a50;
-            border-radius: 10px;
-            background: var(--btn-bg);
-            color: var(--text);
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-            text-align: center;
-        }
-        .btn-care:hover { background: var(--btn-hover); }
-        .btn-care:disabled { background: #1a1a2a; color: #555; cursor: not-allowed; }
-
-        /* Лог */
-        .log-panel {
-            flex: 1;
-            background: var(--card-bg);
-            border: 2px solid var(--border);
-            border-radius: 16px;
-            padding: 15px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .log-panel h2 {
-            font-size: 16px;
-            color: #a0d2db;
-            margin-bottom: 12px;
-            border-bottom: 1px solid #2a2a4a;
-            padding-bottom: 6px;
-        }
-        .log-entry {
-            padding: 8px 0;
-            border-bottom: 1px solid #1a1a30;
-            font-size: 13px;
-            display: flex;
-            gap: 8px;
-            align-items: baseline;
-        }
-        .log-time { color: var(--muted); font-size: 11px; min-width: 35px; }
-        .log-name { flex: 1; }
-        .log-effect { font-size: 11px; color: var(--muted); }
-        .log-details { font-size: 11px; color: #c9b1ff; font-style: italic; }
-        .mood-positive { color: var(--positive); }
-        .mood-negative { color: var(--negative); }
-
-        .empty-log { color: #555; text-align: center; padding: 20px; font-style: italic; }
-
-        .msg { text-align: center; margin-top: 12px; font-size: 14px; min-height: 22px; padding: 10px; border-radius: 8px; }
-        .msg-success { color: #7fdb7f; background: #0f1f0f; }
-        .msg-error { color: #f66; background: #1f0f0f; }
-        .header {
-            display: flex;
             justify-content: space-between;
-            align-items: center;
             flex-wrap: wrap;
             gap: 12px;
             margin-bottom: 20px;
@@ -142,8 +45,6 @@
             border-radius: 12px;
             border: 1px solid var(--border);
         }
-        .header-left { display: flex; gap: 16px; align-items: center; }
-        .header-right { display: flex; gap: 10px; align-items: center; }
         .header a {
             color: var(--accent);
             text-decoration: none;
@@ -151,14 +52,7 @@
             font-weight: 500;
         }
         .header a:hover { text-decoration: underline; }
-        .header a.brand { font-size: 18px; font-weight: 700; }
-        .moon-badge {
-            cursor: pointer;
-            font-size: 16px;
-            padding: 4px 8px;
-            border-radius: 8px;
-            background: #1a1a30;
-        }
+        .header h1 { font-size: 18px; color: var(--accent); }
         .resource-badge {
             background: #1a1a30;
             padding: 4px 10px;
@@ -166,15 +60,157 @@
             font-size: 13px;
             color: #e0c0ff;
         }
-        .btn-care {
-            width: 48px;
-            height: 48px;
-            padding: 0;
+
+        /* Карточка растения */
+        .plant-card {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            margin-bottom: 16px;
+        }
+        .plant-image {
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #0f0f1e;
+            border: 2px solid #2a2a40;
+        }
+        .plant-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .plant-image .emoji {
+            font-size: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            height: 100%;
         }
+        .plant-name {
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--accent);
+        }
+        .stage-name {
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: #1a1a30;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        /* Бары */
+        .bars {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 12px;
+        }
+        .bar-icon { width: 20px; text-align: center; flex-shrink: 0; }
+        .bar-track {
+            flex: 1;
+            height: 10px;
+            background: #1a1a30;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #2a2a40;
+        }
+        .bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+        .bar-fill.hp { background: linear-gradient(90deg, #c04040, var(--hp-color)); }
+        .bar-fill.essence { background: linear-gradient(90deg, #4080c0, var(--essence-color)); }
+        .bar-fill.growth { background: linear-gradient(90deg, #40a050, var(--growth-color)); }
+        .bar-value {
+            width: 36px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        /* Кнопки ухода */
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+        }
+        .btn-care {
+            padding: 14px 8px;
+            border: 1px solid #3a2a50;
+            border-radius: 12px;
+            background: var(--btn-bg);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .btn-care:hover { background: var(--btn-hover); border-color: #5a4a70; }
+        .btn-care:disabled {
+            background: #1a1a2a;
+            color: #555;
+            cursor: not-allowed;
+            border-color: #2a2a30;
+        }
+        .btn-care.harvest {
+            grid-column: span 2;
+            border-color: #3a6030;
+            background: #1a2a1a;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .btn-care.harvest:hover { background: #1a3020; border-color: #4a8040; }
+
+        /* Хроники ухода */
+        .log-panel {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        .log-panel h2 {
+            font-size: 14px;
+            color: #a0d2db;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .log-entry {
+            display: flex;
+            gap: 8px;
+            align-items: baseline;
+            padding: 6px 0;
+            border-bottom: 1px solid #1a1a30;
+            font-size: 12px;
+        }
+        .log-time { color: var(--muted); font-size: 10px; min-width: 32px; }
+        .log-name { flex: 1; }
+        .log-effect { font-size: 10px; color: var(--muted); white-space: nowrap; }
+        .log-details { font-size: 10px; color: #c9b1ff; font-style: italic; }
+        .mood-positive { color: var(--positive); }
+        .mood-negative { color: var(--negative); }
+        .empty-log { color: #555; text-align: center; padding: 15px; font-style: italic; font-size: 13px; }
+
+        .msg { text-align: center; margin-top: 10px; font-size: 13px; min-height: 20px; padding: 8px; border-radius: 8px; }
+        .msg-success { color: #7fdb7f; background: #0f1f0f; }
+        .msg-error { color: #f66; background: #1f0f0f; }
     </style>
 </head>
 <body>
@@ -182,57 +218,29 @@
         <div class="header">
             <a href="/api/game/garden/page">← В оранжерею</a>
             <h1>{{ plant_name }}</h1>
+            <span class="resource-badge">⚡{{ spark_count }} 💰{{ coins }}</span>
         </div>
 
-        <div class="main-panel">
-            <!-- Кнопки -->
-            <div class="btn-panel" id="btnPanel">
-                <button class="btn-care" onclick="doAction('{{ bed.id }}', 'clean')"
-                {% if not bed.can_clean %}disabled{% endif %}
-                title="Очистить листья">
-                    🧹
-                </button>
-                <button class="btn-care" onclick="doAction('{{ bed.id }}', 'water')"
-                        {% if not bed.can_water %}disabled{% endif %}
-                        title="Оросить лунной росой">
-                    💧
-                </button>
-                <button class="btn-care" onclick="doAction('{{ bed.id }}', 'spark')"
-                        {% if spark_count == 0 or bed.growth_stage >= 100 %}disabled{% endif %}
-                        title="Искра Роста">
-                    ⚡
-                </button>
-                <button class="btn-care" onclick="doAction('{{ bed.id }}', 'moon')"
-                        {% if not bed.can_moon_bath %}disabled{% endif %}
-                        title="Выставить под лунный свет">
-                    🌙
-                </button>
-                {% if bed.can_harvest %}
-                <button class="btn-care" onclick="doAction('{{ bed.id }}', 'harvest')"
-                        style="border-color:#3a6030;"
-                        title="Собрать урожай">
-                    🧺
-                </button>
-                {% endif %}
-            </div>
-            <!-- Карточка растения -->
-            <div class="plant-card" id="plantCard">
-                <div class="plant-icon">
-                    {% if bed.icon %}
-                        <img src="/static/{{ bed.icon }}" alt="{{ plant_name }}" style="width:120px; height:120px; object-fit:contain; border-radius:16px;">
-                    {% else %}
+        <div class="plant-card">
+            <div class="plant-image">
+                {% if bed.icon %}
+                    <img src="/static/{{ bed.icon }}" alt="{{ plant_name }}">
+                {% else %}
+                    <div class="emoji">
                         {% if bed.stage_name == "Семя" %}🌰
                         {% elif bed.stage_name == "Росток" %}🌱
                         {% elif bed.stage_name == "Стебель" %}🌿
                         {% elif bed.stage_name == "Бутон" %}🌷
                         {% elif bed.stage_name == "Цветение" %}🌸
                         {% elif bed.stage_name == "Зрелость" %}🌻
-                        {% else %}🪴
-                        {% endif %}
-                    {% endif %}
-                </div>
-                <div class="plant-name">{{ plant_name }}</div>
-                <div class="stage-name">{{ bed.stage_name }}</div>
+                        {% else %}🪴{% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="plant-name">{{ plant_name }}</div>
+            <div class="stage-name">{{ bed.stage_name }}</div>
+
+            <div class="bars">
                 <div class="bar-row">
                     <span class="bar-icon">❤️</span>
                     <div class="bar-track"><div class="bar-fill hp" style="width:{{ bed.vitality if bed.vitality <= 100 else 100 }}%"></div></div>
@@ -248,25 +256,47 @@
                     <div class="bar-track"><div class="bar-fill growth" style="width:{{ bed.growth_stage }}%"></div></div>
                     <span class="bar-value">{{ bed.growth_stage }}%</span>
                 </div>
-            </div>        
-            <!-- Лог -->
-            <div class="log-panel" id="logPanel">
-                <h2>📜 Хроники ухода</h2>
-                {% if logs %}
-                    {% for log in logs %}
-                    <div class="log-entry">
-                        <span class="log-time">{{ log.time }}</span>
-                        <span class="log-name mood-{{ log.mood }}">{{ log.action_name }}</span>
-                        <span class="log-effect">{{ log.effect }}</span>
-                        {% if log.details %}
-                        <span class="log-details">{{ log.details }}</span>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-log">Сегодня ещё ничего не происходило...</div>
+            </div>
+
+            <div class="btn-grid">
+                <button class="btn-care" onclick="doAction({{ bed.id }}, 'clean')"
+                        {% if not bed.can_clean %}disabled{% endif %}>
+                    🧹 Очистить
+                </button>
+                <button class="btn-care" onclick="doAction({{ bed.id }}, 'water')"
+                        {% if not bed.can_water %}disabled{% endif %}>
+                    💧 Оросить
+                </button>
+                <button class="btn-care" onclick="doAction({{ bed.id }}, 'spark')"
+                        {% if spark_count == 0 or bed.growth_stage >= 100 %}disabled{% endif %}>
+                    ⚡ Искра
+                </button>
+                <button class="btn-care" onclick="doAction({{ bed.id }}, 'moon')"
+                        {% if not bed.can_moon_bath %}disabled{% endif %}>
+                    🌙 Луна
+                </button>
+                {% if bed.can_harvest %}
+                <button class="btn-care harvest" onclick="doAction({{ bed.id }}, 'harvest')">
+                    🧺 Собрать урожай
+                </button>
                 {% endif %}
             </div>
+        </div>
+
+        <div class="log-panel">
+            <h2>📜 Хроники ухода</h2>
+            {% if logs %}
+                {% for log in logs %}
+                <div class="log-entry">
+                    <span class="log-time">{{ log.time }}</span>
+                    <span class="log-name mood-{{ log.mood }}">{{ log.action_name }}</span>
+                    <span class="log-effect">{{ log.effect }}</span>
+                    {% if log.details %}<span class="log-details">{{ log.details }}</span>{% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-log">Сегодня ещё ничего не происходило...</div>
+            {% endif %}
         </div>
 
         <div class="msg" id="message"></div>
@@ -278,7 +308,6 @@
             msg.textContent = text;
             msg.className = "msg " + (type === "success" ? "msg-success" : "msg-error");
         }
-
         async function doAction(bedId, action) {
             const urls = {
                 'water': '/api/game/garden/water',
@@ -294,24 +323,12 @@
                 'moon': { bed_id: bedId },
                 'harvest': { bed_id: bedId }
             };
-
             showMessage("...", "");
             try {
-                const r = await fetch(urls[action], {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(bodies[action])
-                });
-                if (r.ok) {
-                    showMessage("✅ Успешно!", "success");
-                    setTimeout(() => location.reload(), 800);
-                } else {
-                    const e = await r.json();
-                    showMessage("❌ " + e.detail, "error");
-                }
-            } catch {
-                showMessage("❌ Ошибка соединения", "error");
-            }
+                const r = await fetch(urls[action], { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(bodies[action]) });
+                if (r.ok) { showMessage("✅ Успешно!", "success"); setTimeout(() => location.reload(), 800); }
+                else { const e = await r.json(); showMessage("❌ " + e.detail, "error"); }
+            } catch { showMessage("❌ Ошибка соединения", "error"); }
         }
     </script>
 </body>
