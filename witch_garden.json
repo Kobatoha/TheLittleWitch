@@ -1,0 +1,33 @@
+{
+    "default_model": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+    "default_refiner": "None",
+    "default_refiner_switch": 0.5,
+    "default_loras": [
+        [true, "watercolor_SDXL.safetensors", 0.7],
+        [true, "None", 1.0],
+        [true, "None", 1.0],
+        [true, "None", 1.0],
+        [true, "None", 1.0]
+    ],
+    "default_cfg_scale": 5.0,
+    "default_sample_sharpness": 3.0,
+    "default_sampler": "dpmpp_2m_sde_gpu",
+    "default_scheduler": "karras",
+    "default_performance": "Quality",
+    "default_prompt": "(digital watercolor sketch:1.2), (colorful manhwa style:1.1), single [РАСТЕНИЕ], fully bloomed, [ЦВЕТ] and [ЦВЕТ] palette, muted dusty colors, clean lineart, soft ink strokes, no background, white background, centered, botanical illustration, game asset",
+    "default_prompt_negative": "3d, realistic, photorealistic, photo, human, person, face, nsfw, blurry, signature, watermark, text, frame, border, multiple items, complex background, shadows, gradients, oil painting, heavy brushstrokes, thick paint, dark background",
+    "default_styles": [],
+    "default_aspect_ratio": "1152*896",
+    "default_overwrite_step": -1
+}
+
+{
+    "block_style": "watercolor wash, ink splatter, comic panel style, webtoon style, sketch lines visible, watercolor blooms, rough pencil underlay, color bleeding, granulation texture, wet-on-dry brushwork",
+    "block_composition": "isolated subject, no surroundings, specimen study, single flora focus, plain backdrop, empty canvas, standalone, no pot no vase, cut flower, field guide plate",
+    "block_color": "desaturated tones, chalky pastels, faded velvet, smoky hues, soft chroma, antique pigment, mineral wash, dusted charcoal tint, matte finish, subdued saturation",
+    "block_lighting_light": "ethereal glow, gentle dreamy, soft whisper, morning dew, fairy light, tender warmth, quiet bloom, silver mist, honeyed air, floating petals",
+    "block_lighting_dark": "occult aura, midnight bloom, creeping shadow, forbidden garden, ghostly pallor, hexed petals, moonlit, ancient roots, whispering leaves, dread beauty",
+    "herbal_name": "Mandrake Ficus, Thorned Hexthistle, Fern of the First Fores, Starspike Succulent, Venus Hex Trap",
+    "flower_name": "Lunar Peony, Moonlight Lily, Witch's Hydrangea, Moon Magnolia, Moonmist Orchid,Shadow Chrysanthemum",
+    "flower_small_name": "Spirit Lavender, Oracle Daisy, Fae Bellflower, Bog Heather, Eternal Strawflower",
+}
