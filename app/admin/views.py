@@ -57,19 +57,25 @@ class PlantAdmin(ModelView, model=Plant):
         Plant.essence_per_care,
         Plant.growth_per_care,
         Plant.min_harvest_stage,
+        Plant.base_potency,
     ]
     column_searchable_list = [Plant.name]
-    column_sortable_list = [Plant.id, Plant.name, Plant.base_vitality, Plant.growth_per_care]
+    column_sortable_list = [Plant.id, Plant.name]
     form_columns = [
         Plant.name,
         Plant.description,
-        Plant.icon,
         Plant.base_vitality,
         Plant.vitality_decay,
         Plant.essence_per_care,
         Plant.growth_per_care,
         Plant.min_harvest_stage,
         Plant.base_potency,
+        Plant.icon_seed,
+        Plant.icon_sprout,
+        Plant.icon_stem,
+        Plant.icon_bud,
+        Plant.icon_bloom,
+        Plant.icon_mature,
     ]
     name = "Растение"
     name_plural = "Растения"

@@ -1,8 +1,8 @@
-"""add care_logs
+"""icons per stage
 
-Revision ID: 8f1ea16ffa54
+Revision ID: 303fa871b18f
 Revises: 
-Create Date: 2026-07-01 00:31:23.947122
+Create Date: 2026-07-13 23:48:08.231427
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8f1ea16ffa54'
+revision: str = '303fa871b18f'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -45,7 +45,12 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('description', sa.String(), nullable=True),
-    sa.Column('icon', sa.String(), nullable=True),
+    sa.Column('icon_seed', sa.String(), nullable=True),
+    sa.Column('icon_sprout', sa.String(), nullable=True),
+    sa.Column('icon_stem', sa.String(), nullable=True),
+    sa.Column('icon_bud', sa.String(), nullable=True),
+    sa.Column('icon_bloom', sa.String(), nullable=True),
+    sa.Column('icon_mature', sa.String(), nullable=True),
     sa.Column('base_vitality', sa.Integer(), nullable=True),
     sa.Column('vitality_decay', sa.Integer(), nullable=True),
     sa.Column('essence_per_care', sa.Integer(), nullable=True),

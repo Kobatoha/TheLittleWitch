@@ -4,16 +4,7 @@ from app.models.plant import Plant
 def seed_plants():
     db = SessionLocal()
     plants = [
-        Plant(
-            name="Мандрагора",
-            description="Корень кричит при сборе. Очень живучая.",
-            base_vitality=120,
-            vitality_decay=3,
-            essence_per_care=10,
-            growth_per_care=7,
-            min_harvest_stage=60,
-            base_potency=100,
-        ),
+        # Лунная лилия
         Plant(
             name="Лунная лилия",
             description="Цветёт только под луной. Высокая эссенция.",
@@ -23,7 +14,29 @@ def seed_plants():
             growth_per_care=10,
             min_harvest_stage=70,
             base_potency=100,
-            icon="plants/lunar_lily/lily.png",
+            icon_seed="plants/lunar_lily/seed.png",
+            icon_sprout="plants/lunar_lily/sprout.png",
+            icon_stem="plants/lunar_lily/stem.png",
+            icon_bud="plants/lunar_lily/bud.png",
+            icon_bloom="plants/lunar_lily/bloom.png",
+            icon_mature="plants/lunar_lily/mature.png",
+        ),
+        # Мандрагора
+        Plant(
+            name="Мандрагора",
+            description="Корень кричит при сборе. Очень живучая.",
+            base_vitality=120,
+            vitality_decay=3,
+            essence_per_care=10,
+            growth_per_care=7,
+            min_harvest_stage=60,
+            base_potency=100,
+            icon_seed="plants/mandrake/seed.png",
+            icon_sprout="plants/mandrake/sprout.png",
+            icon_stem="plants/mandrake/stem.png",
+            icon_bud="plants/mandrake/bud.png",
+            icon_bloom="plants/mandrake/bloom.png",
+            icon_mature="plants/mandrake/mature.png",
         ),
         Plant(
             name="Шипучка болотная",

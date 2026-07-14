@@ -44,6 +44,10 @@ templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates"
 
 
 def bed_to_dict(bed):
+    plant = bed.plant
+    icon = None
+    if plant:
+        icon = plant.get_icon_for_stage(bed.growth_stage) or plant.icon_seed
     return {
         "id": bed.id,
         "plant_name": bed.plant_name,
