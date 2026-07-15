@@ -44,10 +44,6 @@ templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates"
 
 
 def bed_to_dict(bed):
-    plant = bed.plant
-    icon = None
-    if plant:
-        icon = plant.get_icon_for_stage(bed.growth_stage) or plant.icon_seed
     return {
         "id": bed.id,
         "plant_name": bed.plant_name,
@@ -65,7 +61,7 @@ def bed_to_dict(bed):
         "can_clean": bed.can_clean,
         "essence_bar_max": balance.ESSENCE_BAR_MAX,
         "can_moon_bath": bed.can_moon_bath,
-        "icon": bed.plant.icon if bed.plant and bed.plant.icon else None,
+        "icon": bed.plant.get_icon_for_stage(bed.growth_stage) if bed.plant else None,
     }
 
 # === API ===
