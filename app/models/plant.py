@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -23,6 +23,9 @@ class Plant(Base):
     growth_per_care = Column(Integer, default=8)       # +% Цикла Роста за действие ухода
     min_harvest_stage = Column(Integer, default=60)    # мин. стадия для сбора (Бутон)
     base_potency = Column(Integer, default=100)        # Сила Рода (пока константа)
+
+    harvest_item_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    harvest_item = relationship("Item", foreign_keys=[harvest_item_id])
 
     garden_beds = relationship("GardenBed", back_populates="plant")
 

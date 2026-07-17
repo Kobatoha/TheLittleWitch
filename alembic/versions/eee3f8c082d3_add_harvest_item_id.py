@@ -1,8 +1,8 @@
-"""all tables with recipes
+"""add harvest_item_id
 
-Revision ID: 8ccd58eae3cf
+Revision ID: eee3f8c082d3
 Revises: 
-Create Date: 2026-07-17 23:16:54.889844
+Create Date: 2026-07-18 01:10:33.208467
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8ccd58eae3cf'
+revision: str = 'eee3f8c082d3'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -41,6 +41,18 @@ def upgrade() -> None:
     sa.UniqueConstraint('name')
     )
     op.create_index(op.f('ix_items_id'), 'items', ['id'], unique=False)
+    op.create_table('users',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('username', sa.String(length=50), nullable=False),
+    sa.Column('email', sa.String(length=255), nullable=False),
+    sa.Column('hashed_password', sa.String(length=255), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('is_superuser', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
+    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_table('plants',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -57,22 +69,12 @@ def upgrade() -> None:
     sa.Column('growth_per_care', sa.Integer(), nullable=True),
     sa.Column('min_harvest_stage', sa.Integer(), nullable=True),
     sa.Column('base_potency', sa.Integer(), nullable=True),
+    sa.Column('harvest_item_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['harvest_item_id'], ['items.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
     )
     op.create_index(op.f('ix_plants_id'), 'plants', ['id'], unique=False)
-    op.create_table('users',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('username', sa.String(length=50), nullable=False),
-    sa.Column('email', sa.String(length=255), nullable=False),
-    sa.Column('hashed_password', sa.String(length=255), nullable=True),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('is_superuser', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
-    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_table('players',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -174,11 +176,11 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_players_user_id'), table_name='players')
     op.drop_index(op.f('ix_players_nickname'), table_name='players')
     op.drop_table('players')
+    op.drop_index(op.f('ix_plants_id'), table_name='plants')
+    op.drop_table('plants')
     op.drop_index(op.f('ix_users_username'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
-    op.drop_index(op.f('ix_plants_id'), table_name='plants')
-    op.drop_table('plants')
     op.drop_index(op.f('ix_items_id'), table_name='items')
     op.drop_table('items')
     op.drop_index(op.f('ix_categories_name'), table_name='categories')

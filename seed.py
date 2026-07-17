@@ -1,8 +1,14 @@
 from app.core.database import SessionLocal
 from app.models.plant import Plant
+from app.models.item import Item
 
 def seed_plants():
     db = SessionLocal()
+
+    mandrake_item = db.query(Item).filter(Item.name == "Корень мандрагоры").first()
+    lily_item = db.query(Item).filter(Item.name == "Лепесток лунной лилии").first()
+    bog_item = db.query(Item).filter(Item.name == "Шипучка болотная").first()
+
     plants = [
         # Лунная лилия
         Plant(
@@ -20,6 +26,7 @@ def seed_plants():
             icon_bud="plants/lunar_lily/bud.png",
             icon_bloom="plants/lunar_lily/bloom.png",
             icon_mature="plants/lunar_lily/mature.png",
+            harvest_item_id=lily_item.id if lily_item else None,
         ),
         # Мандрагора
         Plant(
@@ -37,6 +44,7 @@ def seed_plants():
             icon_bud="plants/mandrake/bud.png",
             icon_bloom="plants/mandrake/bloom.png",
             icon_mature="plants/mandrake/mature.png",
+            harvest_item_id=mandrake_item.id if mandrake_item else None,
         ),
         Plant(
             name="Шипучка болотная",
@@ -47,6 +55,7 @@ def seed_plants():
             growth_per_care=12,
             min_harvest_stage=50,
             base_potency=100,
+            harvest_item_id=bog_item.id if bog_item else None,
         ),
     ]
 

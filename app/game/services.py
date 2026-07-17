@@ -16,6 +16,7 @@ from app.models.item import Item
 from app.models.plant import Plant
 from app.models.player import Player
 from app.models.care_log import CareLog
+from app.models.recipe import Recipe
 
 
 def log_action(db: Session, player_id: int, bed_id: int, action: str, action_name: str, effect: str, mood: str = "neutral", details: str = None):
@@ -214,7 +215,11 @@ def harvest_bed(db: Session, player_id: int, bed_id: int) -> dict:
     quality = formulas.get_quality(bed.vitality)
 
     # Находим/создаём предмет
-    item = db.query(Item).filter(Item.name.ilike(f"%{plant.name.split()[0]}%")).first()
+    if plant.harvest_item_id:
+        item = db.query(Item).filter(Item.id == plant.harvest_item_id).first()
+    else:
+        item = None
+
     if not item:
         item = Item(name=f"Ингредиент: {plant.name}", item_type="ingredient", rarity="common")
         db.add(item)

@@ -29,6 +29,7 @@ def inventory_page(request: Request, db: Session = Depends(get_db)):
     bonuses = []
     rares = []
     consumables = []
+    potions = []
 
     for inv in inventory_items:
         item_data = {
@@ -51,6 +52,8 @@ def inventory_page(request: Request, db: Session = Depends(get_db)):
             rares.append(item_data)
         elif inv.item.item_type == "consumable":
             consumables.append(item_data)
+        elif inv.item.item_type == "potion":
+            potions.append(item_data)
 
     spark_count = sum(c["quantity"] for c in consumables if c["item_name"] == "Искра Роста")
     player = db.query(Player).filter(Player.id == TEMP_PLAYER_ID).first()

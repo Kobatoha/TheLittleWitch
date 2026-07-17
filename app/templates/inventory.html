@@ -260,6 +260,7 @@
                                     {% elif item.item_type == "bonus" %}🎁
                                     {% elif item.item_type == "rare" %}🌟
                                     {% elif item.item_type == "consumable" %}⚡
+                                    {% elif item.item_type == "potion" %}🧪
                                     {% else %}📦
                                     {% endif %}
                                 {% endif %}
@@ -279,6 +280,7 @@
                 {{ render_grid(bonuses, "🎁 Бонусные предметы") }}
                 {{ render_grid(consumables, "⚡ Расходные предметы") }}
                 {{ render_grid(rares, "🌟 Редкая удача") }}
+                {{ render_grid(potions, "🧪 Зелья") }}
 
                 {% if total_items == 0 %}
                 <div style="text-align:center; color:#666; padding:40px;">
@@ -331,7 +333,8 @@
                 "ingredient": "🌿",
                 "bonus": "🎁",
                 "rare": "🌟",
-                "consumable": "⚡"
+                "consumable": "⚡",
+                "potion": "🧪",
             };
             document.getElementById("detailIcon").textContent = icons[item.item_type] || "📦";
 
