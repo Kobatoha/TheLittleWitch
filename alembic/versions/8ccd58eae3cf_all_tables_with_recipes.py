@@ -1,8 +1,8 @@
-"""icons per stage
+"""all tables with recipes
 
-Revision ID: 303fa871b18f
+Revision ID: 8ccd58eae3cf
 Revises: 
-Create Date: 2026-07-13 23:48:08.231427
+Create Date: 2026-07-17 23:16:54.889844
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '303fa871b18f'
+revision: str = '8ccd58eae3cf'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -90,6 +90,24 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_players_nickname'), 'players', ['nickname'], unique=True)
     op.create_index(op.f('ix_players_user_id'), 'players', ['user_id'], unique=True)
+    op.create_table('recipes',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('description', sa.String(), nullable=True),
+    sa.Column('ingredient_1_id', sa.Integer(), nullable=False),
+    sa.Column('ingredient_2_id', sa.Integer(), nullable=True),
+    sa.Column('ingredient_3_id', sa.Integer(), nullable=True),
+    sa.Column('result_item_id', sa.Integer(), nullable=False),
+    sa.Column('result_quantity', sa.Integer(), nullable=True),
+    sa.Column('base_success_chance', sa.Float(), nullable=True),
+    sa.Column('quality_bonus_percent', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['ingredient_1_id'], ['items.id'], ),
+    sa.ForeignKeyConstraint(['ingredient_2_id'], ['items.id'], ),
+    sa.ForeignKeyConstraint(['ingredient_3_id'], ['items.id'], ),
+    sa.ForeignKeyConstraint(['result_item_id'], ['items.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_recipes_id'), 'recipes', ['id'], unique=False)
     op.create_table('garden_beds',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('player_id', sa.Integer(), nullable=False),
@@ -151,6 +169,8 @@ def downgrade() -> None:
     op.drop_table('care_logs')
     op.drop_index(op.f('ix_garden_beds_id'), table_name='garden_beds')
     op.drop_table('garden_beds')
+    op.drop_index(op.f('ix_recipes_id'), table_name='recipes')
+    op.drop_table('recipes')
     op.drop_index(op.f('ix_players_user_id'), table_name='players')
     op.drop_index(op.f('ix_players_nickname'), table_name='players')
     op.drop_table('players')

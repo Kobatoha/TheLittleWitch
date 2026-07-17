@@ -4,29 +4,35 @@ from app.models.player import Player
 
 db = SessionLocal()
 
-# Создаём пользователя
-user = User(
-    username="test_witch",
-    email="witch@example.com",
-    hashed_password="test123",  # потом заменим на нормальный хэш
-    is_active=True,
-)
-db.add(user)
-db.commit()
-db.refresh(user)
-print(f"User создан: id={user.id}, username={user.username}")
+user = db.query(User).filter(User.username == "test_witch").first()
+if not user:
+    user = User(
+        username="test_witch",
+        email="witch@example.com",
+        hashed_password="test123",
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    print(f"User создан: id={user.id}")
+else:
+    print(f"User уже есть: id={user.id}")
 
-# Создаём игрока (ведьмочку)
-player = Player(
-    user_id=user.id,
-    nickname="Ведьмочка Тест",
-    coins=100,
-    energy=100,
-)
-db.add(player)
-db.commit()
-db.refresh(player)
-print(f"Player создан: id={player.id}, nickname={player.nickname}")
+player = db.query(Player).filter(Player.user_id == user.id).first()
+if not player:
+    player = Player(
+        user_id=user.id,
+        nickname="Ведьмочка Тест",
+        coins=100,
+        energy=100,
+    )
+    db.add(player)
+    db.commit()
+    db.refresh(player)
+    print(f"Player создан: id={player.id}")
+else:
+    print(f"Player уже есть: id={player.id}")
 
 db.close()
 print("Готово!")

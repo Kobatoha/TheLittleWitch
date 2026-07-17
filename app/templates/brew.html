@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Зельеварение — Колдовская оранжерея</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --border: #2a2a4a;
+            --text: #e0d8f0;
+            --muted: #7a7a9e;
+            --accent: #c9b1ff;
+            --gold: #ffd700;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .header a { color: var(--accent); text-decoration: none; font-size: 14px; }
+        .header h1 { font-size: 20px; color: var(--accent); }
+        .resource-badge { background: #1a1a30; padding: 4px 10px; border-radius: 12px; font-size: 13px; color: #e0c0ff; }
+
+        .recipe-card {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .recipe-name { font-weight: 700; font-size: 18px; color: var(--accent); }
+        .recipe-desc { font-size: 13px; color: var(--muted); }
+        .recipe-ingredients {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 14px;
+            flex-wrap: wrap;
+        }
+        .ingredient { background: #1a1a30; padding: 6px 12px; border-radius: 8px; font-size: 13px; }
+        .ingredient.missing { opacity: 0.4; text-decoration: line-through; }
+        .arrow { color: var(--accent); font-weight: 700; }
+        .result { background: #1a2a1a; padding: 6px 12px; border-radius: 8px; color: #7fdb7f; font-weight: 600; }
+        .chance { font-size: 12px; color: var(--muted); }
+        .brew-btn {
+            padding: 12px;
+            border: 1px solid #5a3a20;
+            border-radius: 12px;
+            background: #2d1b10;
+            color: var(--gold);
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 700;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .brew-btn:hover { background: #4a2a18; border-color: #8a5a30; }
+        .brew-btn:disabled { background: #1a1a2a; color: #555; cursor: not-allowed; border-color: #2a2a30; }
+
+        .msg { text-align: center; margin-top: 10px; font-size: 14px; min-height: 22px; padding: 10px; border-radius: 8px; }
+        .msg-success { color: #7fdb7f; background: #0f1f0f; }
+        .msg-error { color: #f66; background: #1f0f0f; }
+
+        .kettle {
+            text-align: center;
+            font-size: 48px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/api/game/garden/page">← В оранжерею</a>
+            <h1>🧪 Зельеварение</h1>
+            <span class="resource-badge">⚡{{ spark_count }} 💰{{ coins }}</span>
+        </div>
+
+        <div class="kettle">🪄🔮🪄</div>
+
+        {% for r in recipes %}
+        <div class="recipe-card">
+            <div class="recipe-name">{{ r.name }}</div>
+            <div class="recipe-desc">{{ r.description }}</div>
+            <div class="recipe-ingredients">
+                <span class="ingredient {% if not r.can_brew %}missing{% endif %}">{{ r.ingredient_1_name }}</span>
+                {% if r.ingredient_2_name %}
+                <span class="arrow">+</span>
+                <span class="ingredient {% if not r.can_brew %}missing{% endif %}">{{ r.ingredient_2_name }}</span>
+                {% endif %}
+                <span class="arrow">=</span>
+                <span class="result">{{ r.result_name }}</span>
+            </div>
+            <div class="chance">Шанс успеха: {{ r.success_chance }}%</div>
+            <button class="brew-btn" onclick="brewPotion('{{ r.id }}')" {% if not r.can_brew %}disabled{% endif %}>
+                🧪 Сварить зелье
+            </button>
+        </div>
+        {% endfor %}
+
+        <div class="msg" id="message"></div>
+    </div>
+
+    <script>
+        function showMessage(text, type) {
+            const msg = document.getElementById("message");
+            msg.textContent = text;
+            msg.className = "msg " + (type === "success" ? "msg-success" : "msg-error");
+        }
+        async function brewPotion(recipeId) {
+            showMessage("Варим зелье...", "");
+            try {
+                const r = await fetch("/api/game/brew", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ recipe_id: recipeId })
+                });
+                if (r.ok) {
+                    const d = await r.json();
+                    showMessage(`🧪 Сварено: ${d.potion_name}! Шанс был ${d.success_chance.toFixed(0)}%`, "success");
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    const e = await r.json();
+                    showMessage("❌ " + e.detail, "error");
+                }
+            } catch {
+                showMessage("❌ Ошибка соединения", "error");
+            }
+        }
+    </script>
+</body>
+</html>
