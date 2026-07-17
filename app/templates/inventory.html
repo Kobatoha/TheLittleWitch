@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Инвентарь ведьмочки</title>
+    {% include "_header_styles.html" %}
     <style>
         :root {
             --bg: #1a1a2e;
@@ -231,59 +232,12 @@
             color: #666;
             margin-top: 4px;
         }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 12px 16px;
-            background: var(--card-bg);
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-        .header-left { display: flex; gap: 16px; align-items: center; }
-        .header-right { display: flex; gap: 10px; align-items: center; }
-        .header a {
-            color: var(--accent);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .header a:hover { text-decoration: underline; }
-        .header a.brand { font-size: 18px; font-weight: 700; }
-        .moon-badge {
-            cursor: pointer;
-            font-size: 16px;
-            padding: 4px 8px;
-            border-radius: 8px;
-            background: #1a1a30;
-        }
-        .resource-badge {
-            background: #1a1a30;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 13px;
-            color: #e0c0ff;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Шапка -->
-        <div class="header">
-            <div>
-                <h1>🎒 Инвентарь ведьмочки</h1>
-                <a href="/api/game/garden/page">← Вернуться в сад</a>
-            </div>
-            <div class="stats">
-                <span>📦 {{ total_items }} предметов</span>
-                <span>⚡ {{ spark_count }} Искр</span>
-                <span>💰 {{ coins }} монет</span>
-            </div>
-        </div>
-
+        {% include "_header.html" %}
         <!-- Основная панель -->
         <div class="main-panel">
             <!-- Сетка инвентаря -->

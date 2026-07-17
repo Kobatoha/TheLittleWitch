@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Лавка ведьмочки</title>
+    {% include "_header_styles.html" %}
     <style>
         :root {
             --bg: #1a1a2e;
@@ -112,55 +113,11 @@
         .quality-Обычный { color: #ccc; }
         .quality-Сочный { color: #7fdb7f; }
         .quality-Искрящийся { color: var(--gold); }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 12px 16px;
-            background: var(--card-bg);
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-        .header-left { display: flex; gap: 16px; align-items: center; }
-        .header-right { display: flex; gap: 10px; align-items: center; }
-        .header a {
-            color: var(--accent);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .header a:hover { text-decoration: underline; }
-        .header a.brand { font-size: 18px; font-weight: 700; }
-        .moon-badge {
-            cursor: pointer;
-            font-size: 16px;
-            padding: 4px 8px;
-            border-radius: 8px;
-            background: #1a1a30;
-        }
-        .resource-badge {
-            background: #1a1a30;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 13px;
-            color: #e0c0ff;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <div>
-                <h1>🏪 Лавка ведьмочки</h1>
-                <a href="/api/game/garden/page">← В сад</a> •
-                <a href="/api/game/inventory">🎒 Инвентарь</a>
-            </div>
-            <div class="coins">💰 {{ coins }} монет</div>
-        </div>
-
+        {% include "_header.html" %}
         {% if items %}
         <div class="shop-grid">
             {% for item in items %}
