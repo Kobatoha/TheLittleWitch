@@ -230,3 +230,26 @@ def plant_page(request: Request, bed_id: int, db: Session = Depends(get_db)):
         "now": datetime.utcnow()
     })
     
+@router.get("/profile", response_class=HTMLResponse)
+def profile_page(request: Request, db: Session = Depends(get_db)):
+    try:
+        profile = services.get_player_profile(db, TEMP_PLAYER_ID)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Игрок не найден")
+
+    spark_count = 0
+    spark_item = db.query(Item).filter(Item.name == "Искра Роста").first()
+    if spark_item:
+        spark_inv = db.query(Inventory).filter(
+            Inventory.player_id == TEMP_PLAYER_ID,
+            Inventory.item_id == spark_item.id
+        ).first()
+        if spark_inv:
+            spark_count = spark_inv.quantity
+
+    return templates.TemplateResponse("profile.html", {
+        "request": request,
+        "profile": profile,
+        "spark_count": spark_count,
+        "coins": profile["coins"],
+    })

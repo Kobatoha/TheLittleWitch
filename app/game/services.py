@@ -620,3 +620,36 @@ def add_experience(db: Session, player_id: int, amount: int, reason: str = "") -
 
     db.commit()
     return player
+
+# === ПРОФИЛЬ ===
+
+def get_player_profile(db: Session, player_id: int) -> dict:
+    player = db.query(Player).filter(Player.id == player_id).first()
+    if not player:
+        raise ValueError("Игрок не найден")
+
+    # Ближайшая награда
+    next_reward = db.query(LevelReward).filter(
+        LevelReward.level > player.level
+    ).order_by(LevelReward.level.asc()).first()
+
+    # Полученные перки
+    perks = db.query(Perk).filter(Perk.player_id == player_id).all()
+
+    return {
+        "nickname": player.nickname,
+        "level": player.level,
+        "experience": player.experience,
+        "experience_to_next": player.experience_to_next,
+        "xp_progress": player.xp_progress_percent,
+        "title": player.title_display,
+        "coins": player.coins,
+        "total_harvests": player.total_harvests,
+        "total_potions_brewed": player.total_potions_brewed,
+        "total_coins_earned": player.total_coins_earned,
+        "total_moon_baths": player.total_moon_baths,
+        "days_in_game": player.days_in_game,
+        "next_reward_level": next_reward.level if next_reward else None,
+        "next_reward_name": next_reward.reward_name if next_reward else "Максимальный уровень!",
+        "perks": [{"name": p.perk_name, "description": p.description} for p in perks],
+    }
