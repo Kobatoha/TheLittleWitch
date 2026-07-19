@@ -220,6 +220,9 @@
             color: #666;
             margin-top: 4px;
         }
+        .msg { text-align: center; margin-top: 10px; font-size: 14px; min-height: 22px; padding: 10px; border-radius: 8px; }
+        .msg-success { color: #7fdb7f; background: #0f1f0f; }
+        .msg-error { color: #f66; background: #1f0f0f; }
     </style>
 </head>
 <body>
@@ -291,9 +294,11 @@
                     <div class="detail-type" id="detailType"></div>
                     <div class="detail-desc" id="detailDesc"></div>
                     <div class="detail-meta" id="detailMeta"></div>
+                    <div id="detailActions" style="margin-top:12px;"></div>
                 </div>
             </div>
         </div>
+        <div id="message" class="msg"></div>
     </div>
 
     <script>
@@ -352,6 +357,46 @@
                 "Редкость: " + (rarityNames[item.rarity] || item.rarity) +
                 " • Количество: " + item.quantity +
                 (item.created_at ? " • Получено: " + item.created_at : "");
+
+            // Кнопка использования для зелий
+            const actionsDiv = document.getElementById("detailActions");
+            if (item.item_type === "potion") {
+                actionsDiv.innerHTML = `<button onclick="usePotion(${item.id})" 
+                    style="background:#2d1b3e; color:#c9b1ff; border:1px solid #5a4a70; padding:10px 20px; border-radius:10px; cursor:pointer; font-size:14px; width:100%;">
+                    🧪 Выпить зелье</button>`;
+            } else {
+                actionsDiv.innerHTML = "";
+            }
+        }
+        async function usePotion(invId) {
+            const msg = document.getElementById("message");
+            if (!msg) {
+                alert("Ошибка: нет элемента message");
+                return;
+            }
+            msg.textContent = "Пьём зелье...";
+            msg.className = "msg";
+            try {
+                const r = await fetch("/api/game/inventory/use-potion", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ inventory_id: invId })
+                });
+                if (r.ok) {
+                    const d = await r.json();
+                    const lvlMsg = d.leveled_up ? ` 🎉 НОВЫЙ УРОВЕНЬ ${d.level}!` : "";
+                    msg.textContent = `🧪 ${d.potion_name} выпито! +${d.experience_gained} XP (${d.new_experience}/${d.experience_to_next})${lvlMsg}`;
+                    msg.className = "msg msg-success";
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    const e = await r.json();
+                    msg.textContent = "❌ " + e.detail;
+                    msg.className = "msg msg-error";
+                }
+            } catch {
+                msg.textContent = "❌ Ошибка соединения";
+                msg.className = "msg msg-error";
+            }
         }
     </script>
 </body>

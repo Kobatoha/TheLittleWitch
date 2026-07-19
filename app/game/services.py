@@ -655,3 +655,64 @@ def get_player_profile(db: Session, player_id: int) -> dict:
         "next_reward_name": next_reward.reward_name if next_reward else "Максимальный уровень!",
         "perks": [{"name": p.perk_name, "description": p.description} for p in perks],
     }
+
+
+def use_potion(db: Session, player_id: int, inventory_id: int) -> dict:
+    """Использовать зелье из инвентаря."""
+    inv = db.query(Inventory).filter(
+        Inventory.id == inventory_id,
+        Inventory.player_id == player_id,
+        Inventory.quantity > 0
+    ).first()
+    if not inv:
+        raise ValueError("Предмет не найден")
+    if inv.item.item_type != "potion":
+        raise ValueError("Это не зелье!")
+
+    potion_name = inv.item.name
+    effects = balance.POTION_EFFECTS.get(potion_name, {"experience": 30})
+
+    # Тратим зелье
+    inv.quantity -= 1
+    if inv.quantity <= 0:
+        db.delete(inv)
+
+    # Начисляем опыт
+    experience_gained = effects["experience"]
+    player = db.query(Player).filter(Player.id == player_id).first()
+    player.experience += experience_gained
+    player.total_potions_brewed += 1
+
+    # Проверяем левел-ап
+    leveled_up = False
+    while player.experience >= player.experience_to_next:
+        player.experience -= player.experience_to_next
+        player.level += 1
+        player.experience_to_next = int(player.experience_to_next * 1.2)
+        leveled_up = True
+
+        # Выдаём награду
+        reward = db.query(LevelReward).filter(LevelReward.level == player.level).first()
+        if reward:
+            if reward.reward_type == "coins":
+                player.coins += reward.reward_value
+            elif reward.reward_type == "perk":
+                existing = db.query(Perk).filter(
+                    Perk.player_id == player_id, Perk.perk_code == reward.reward_code
+                ).first()
+                if not existing:
+                    perk = Perk(player_id=player_id, perk_code=reward.reward_code,
+                                perk_name=reward.reward_name, description=reward.description)
+                    db.add(perk)
+            elif reward.reward_type == "title":
+                player.title = reward.reward_name
+
+    db.commit()
+    return {
+        "potion_name": potion_name,
+        "experience_gained": experience_gained,
+        "new_experience": player.experience,
+        "experience_to_next": player.experience_to_next,
+        "level": player.level,
+        "leveled_up": leveled_up
+    }

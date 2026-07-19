@@ -92,3 +92,11 @@ BONUS_RARITY_WEIGHTS = {
     "rare": 10,
     "epic": 2,
 }
+
+# Эффекты зелий (experience при использовании)
+POTION_EFFECTS = {
+    "Зелье бодрости": {"experience": 50, "description": "Восстанавливает силы ведьмочки."},
+    "Лунный эликсир": {"experience": 100, "description": "Ускоряет рост растений."},
+    "Тёмная настойка": {"experience": 150, "description": "Защищает от увядания."},
+    "Эссенция живучести": {"experience": 200, "description": "Мощное восстановление."},
+}

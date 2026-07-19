@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
@@ -10,6 +11,7 @@ from app.core.config import TEMP_PLAYER_ID
 from app.core.balance import QUALITY_NORMAL
 from app.core.database import get_db
 from app.game.utils import format_dt
+from app.game import services
 from app.models.inventory import Inventory
 from app.models.player import Player
 
@@ -76,3 +78,14 @@ def inventory_page(request: Request, db: Session = Depends(get_db)):
         "total_items": len(inventory_items),
         "coins": player.coins if player else 0,
     })
+
+class UsePotionRequest(BaseModel):
+    inventory_id: int
+
+@router.post("/inventory/use-potion")
+def use_potion(request: UsePotionRequest, db: Session = Depends(get_db)):
+    try:
+        result = services.use_potion(db, TEMP_PLAYER_ID, request.inventory_id)
+        return {"ok": True, **result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
