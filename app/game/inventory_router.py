@@ -58,12 +58,20 @@ def inventory_page(request: Request, db: Session = Depends(get_db)):
     spark_count = sum(c["quantity"] for c in consumables if c["item_name"] == "Искра Роста")
     player = db.query(Player).filter(Player.id == TEMP_PLAYER_ID).first()
 
+    print("=== DEBUG ===")
+    print("potions:", potions)
+    print("total_items:", len(inventory_items))
+    for key in ["ingredients", "bonuses", "consumables", "rares", "potions"]:
+        print(f"{key}: {len(locals().get(key, []))} items")
+    print("=== END DEBUG ===")
+
     return templates.TemplateResponse("inventory.html", {
         "request": request,
         "ingredients": ingredients,
         "bonuses": bonuses,
         "rares": rares,
         "consumables": consumables,
+        "potions": potions,  # ← ВОТ ЭТО ДОБАВИТЬ
         "spark_count": spark_count,
         "total_items": len(inventory_items),
         "coins": player.coins if player else 0,
