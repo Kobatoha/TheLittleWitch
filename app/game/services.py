@@ -582,3 +582,41 @@ def brew_potion(db: Session, player_id: int, recipe_id: int) -> dict:
         "ingredients_used": [inv.item.name for inv in ingredients]
     }
     
+def add_experience(db: Session, player_id: int, amount: int, reason: str = "") -> Player:
+    """Начисляет experience игроку, проверяет левел-ап."""
+    player = db.query(Player).filter(Player.id == player_id).first()
+    if not player:
+        return None
+
+    player.experience += amount
+
+    # Проверяем левел-ап
+    leveled_up = False
+    while player.experience >= player.experience_to_next:
+        player.experience -= player.experience_to_next
+        player.level += 1
+        player.experience = int(player.experience_to_next * 1.2)  # +20% XP за каждый уровень
+        leveled_up = True
+
+        # Выдаём награду за уровень
+        reward = db.query(LevelReward).filter(LevelReward.level == player.level).first()
+        if reward:
+            if reward.reward_type == "coins":
+                player.coins += reward.reward_value
+            elif reward.reward_type == "perk":
+                # Проверяем, есть ли уже такой перк
+                existing = db.query(Perk).filter(
+                    Perk.player_id == player_id,
+                    Perk.perk_code == reward.reward_code
+                ).first()
+                if not existing:
+                    perk = Perk(player_id=player_id, perk_code=reward.reward_code,
+                                perk_name=reward.reward_name, description=reward.description)
+                    db.add(perk)
+            elif reward.reward_type == "title":
+                player.title = reward.reward_name
+            elif reward.reward_type == "unlock_recipe":
+                pass  # Рецепты уже открыты всем, просто нотификация
+
+    db.commit()
+    return player

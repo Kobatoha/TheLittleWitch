@@ -1,8 +1,8 @@
-"""add harvest_item_id
+"""player progression system
 
-Revision ID: eee3f8c082d3
+Revision ID: 871f446c4069
 Revises: 
-Create Date: 2026-07-18 01:10:33.208467
+Create Date: 2026-07-20 01:03:09.154166
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'eee3f8c082d3'
+revision: str = '871f446c4069'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -41,6 +41,18 @@ def upgrade() -> None:
     sa.UniqueConstraint('name')
     )
     op.create_index(op.f('ix_items_id'), 'items', ['id'], unique=False)
+    op.create_table('level_rewards',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('level', sa.Integer(), nullable=False),
+    sa.Column('reward_type', sa.String(length=50), nullable=False),
+    sa.Column('reward_code', sa.String(length=100), nullable=True),
+    sa.Column('reward_name', sa.String(length=200), nullable=False),
+    sa.Column('description', sa.String(length=300), nullable=True),
+    sa.Column('reward_value', sa.Integer(), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('level')
+    )
+    op.create_index(op.f('ix_level_rewards_id'), 'level_rewards', ['id'], unique=False)
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(length=50), nullable=False),
@@ -82,10 +94,16 @@ def upgrade() -> None:
     sa.Column('coins', sa.Integer(), nullable=False),
     sa.Column('energy', sa.Integer(), nullable=False),
     sa.Column('max_energy', sa.Integer(), nullable=False),
+    sa.Column('appearance', sa.String(length=2000), nullable=True),
     sa.Column('level', sa.Integer(), nullable=False),
     sa.Column('experience', sa.Integer(), nullable=False),
+    sa.Column('experience_to_next', sa.Integer(), nullable=False),
+    sa.Column('title', sa.String(length=100), nullable=True),
+    sa.Column('total_harvests', sa.Integer(), nullable=False),
+    sa.Column('total_potions_brewed', sa.Integer(), nullable=False),
+    sa.Column('total_coins_earned', sa.Integer(), nullable=False),
+    sa.Column('total_moon_baths', sa.Integer(), nullable=False),
     sa.Column('days_in_game', sa.Integer(), nullable=False),
-    sa.Column('appearance', sa.String(length=2000), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -130,6 +148,18 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_garden_beds_id'), 'garden_beds', ['id'], unique=False)
+    op.create_table('perks',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('player_id', sa.Integer(), nullable=False),
+    sa.Column('perk_code', sa.String(length=50), nullable=False),
+    sa.Column('perk_name', sa.String(length=100), nullable=False),
+    sa.Column('description', sa.String(length=255), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('unlocked_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.ForeignKeyConstraint(['player_id'], ['players.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_perks_id'), 'perks', ['id'], unique=False)
     op.create_table('care_logs',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('garden_bed_id', sa.Integer(), nullable=False),
@@ -169,6 +199,8 @@ def downgrade() -> None:
     op.drop_table('inventory')
     op.drop_index(op.f('ix_care_logs_id'), table_name='care_logs')
     op.drop_table('care_logs')
+    op.drop_index(op.f('ix_perks_id'), table_name='perks')
+    op.drop_table('perks')
     op.drop_index(op.f('ix_garden_beds_id'), table_name='garden_beds')
     op.drop_table('garden_beds')
     op.drop_index(op.f('ix_recipes_id'), table_name='recipes')
@@ -181,6 +213,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_users_username'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
+    op.drop_index(op.f('ix_level_rewards_id'), table_name='level_rewards')
+    op.drop_table('level_rewards')
     op.drop_index(op.f('ix_items_id'), table_name='items')
     op.drop_table('items')
     op.drop_index(op.f('ix_categories_name'), table_name='categories')

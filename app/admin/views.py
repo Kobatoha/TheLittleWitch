@@ -3,6 +3,9 @@ from sqladmin import ModelView
 from app.models import Category, Item, User
 from app.models.plant import Plant
 from app.models.garden_bed import GardenBed
+from app.models.player import Player
+from app.models.perk import Perk
+from app.models.level_reward import LevelReward
 
 
 class UserAdmin(ModelView, model=User):
@@ -99,3 +102,17 @@ class GardenBedAdmin(ModelView, model=GardenBed):
     name = "Грядка"
     name_plural = "Грядки"
 
+class PlayerAdmin(ModelView, model=Player):
+    column_list = [Player.id, Player.nickname, Player.level, Player.experience, Player.coins, Player.total_harvests]
+    name = "Игрок"
+    name_plural = "Игроки"
+
+class PerkAdmin(ModelView, model=Perk):
+    column_list = [Perk.id, Perk.player_id, Perk.perk_code, Perk.perk_name, Perk.is_active]
+    name = "Перк"
+    name_plural = "Перки"
+
+class LevelRewardAdmin(ModelView, model=LevelReward):
+    column_list = [LevelReward.level, LevelReward.reward_name, LevelReward.reward_type]
+    name = "Награда за уровень"
+    name_plural = "Награды за уровни"
