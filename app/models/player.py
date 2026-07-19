@@ -55,7 +55,7 @@ class Player(Base):
     def xp_progress_percent(self) -> int:
         if self.experience_to_next == 0:
             return 100
-        return min(100, int(self.xp / self.experience_to_next * 100))
+        return min(100, int(self.experience / self.experience_to_next * 100))
 
     @property
     def title_display(self) -> str:

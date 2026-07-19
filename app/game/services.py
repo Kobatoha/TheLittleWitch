@@ -17,6 +17,8 @@ from app.models.plant import Plant
 from app.models.player import Player
 from app.models.care_log import CareLog
 from app.models.recipe import Recipe
+from app.models.level_reward import LevelReward
+from app.models.perk import Perk
 
 
 def log_action(db: Session, player_id: int, bed_id: int, action: str, action_name: str, effect: str, mood: str = "neutral", details: str = None):
