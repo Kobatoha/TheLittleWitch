@@ -50,14 +50,15 @@ def roll_bonus_drops(essence: int) -> int:
     return base + dice
 
 
-def roll_rare_drop(essence: int, growth_stage: int) -> bool:
+def roll_rare_drop(essence: int, growth_stage: int, rare_luck_perk: bool = False) -> bool:
     chance = balance.RARE_DROP_BASE_CHANCE
     if essence >= 100:
         chance += balance.RARE_DROP_ESSENCE_BONUS
     if growth_stage >= 95:
         chance += balance.RARE_DROP_ZENITH_BONUS
+    if rare_luck_perk:
+        chance += 0.10  # +10%
     return random.random() < chance
-
 
 def calculate_night_essence_decay(essence: int, was_watered_yesterday: bool) -> int:
     if was_watered_yesterday:

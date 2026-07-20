@@ -77,8 +77,8 @@ def plant_seed(db: Session, player_id: int, plant_id: int) -> GardenBed:
         GardenBed.player_id == player_id,
         GardenBed.plant_id != None
     ).count()
-    if beds_count >= balance.MAX_BEDS_PER_PLAYER:
-        raise ValueError(f"Максимум {balance.MAX_BEDS_PER_PLAYER} грядок. Освободи одну!")
+    if beds_count >= get_max_beds(db, player_id):
+        raise ValueError(f"Максимум {get_max_beds(db, player_id)} грядок. Освободи одну!")
 
     plant = db.query(Plant).filter(Plant.id == plant_id).first()
     if not plant:
@@ -102,7 +102,6 @@ def plant_seed(db: Session, player_id: int, plant_id: int) -> GardenBed:
     db.commit()
     db.refresh(bed)
     return bed
-
 
 # === ПОЛИВ ===
 
@@ -166,7 +165,8 @@ def clean_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
 
     plant = bed.plant
 
-    bed.vitality = min(bed.vitality + balance.WATER_VITALITY_BOOST, max(plant.base_vitality, 100))
+    vitality_boost = 10 if has_perk(db, player_id, "strong_clean") else 5
+    bed.vitality = min(bed.vitality + vitality_boost, max(plant.base_vitality, 100))
     bed.essence += 2
     bed.last_cleaned_at = datetime.utcnow()
 
@@ -449,6 +449,10 @@ def sell_item(db: Session, player_id: int, inventory_id: int, sell_quantity: int
     item = inv.item
     total_price = item.sell_price * sell_quantity
 
+    # === БОНУС К ЦЕНЕ ЗА ПЕРК ===
+    if has_perk(db, player_id, "market_bonus_20"):
+        total_price = int(total_price * 1.2)
+
     # Списываем предмет
     inv.quantity -= sell_quantity
     if inv.quantity <= 0:
@@ -584,6 +588,7 @@ def brew_potion(db: Session, player_id: int, recipe_id: int) -> dict:
         "ingredients_used": [inv.item.name for inv in ingredients]
     }
     
+
 def add_experience(db: Session, player_id: int, amount: int, reason: str = "") -> Player:
     """Начисляет experience игроку, проверяет левел-ап."""
     player = db.query(Player).filter(Player.id == player_id).first()
@@ -716,3 +721,42 @@ def use_potion(db: Session, player_id: int, inventory_id: int) -> dict:
         "level": player.level,
         "leveled_up": leveled_up
     }
+
+
+def has_perk(db: Session, player_id: int, perk_code: str) -> bool:
+    """Проверяет, есть ли у игрока активный перк."""
+    perk = db.query(Perk).filter(
+        Perk.player_id == player_id,
+        Perk.perk_code == perk_code,
+        Perk.is_active == True
+    ).first()
+    return perk is not None
+
+
+def can_water_bed(db: Session, bed: GardenBed, player_id: int) -> bool:
+    if bed.is_dead or bed.plant_id is None:
+        return False
+    if bed.recovery_until and bed.recovery_until > datetime.utcnow():
+        return False
+    if bed.last_watered_at:
+        # Двойной полив: если есть перк, разрешаем второй полив
+        if has_perk(db, player_id, "double_water"):
+            # Проверяем, что сегодня полили только 1 раз
+            today_count = db.query(CareLog).filter(
+                CareLog.garden_bed_id == bed.id,
+                CareLog.action == "water",
+                CareLog.created_at >= datetime.utcnow().replace(hour=0, minute=0, second=0)
+            ).count()
+            if today_count >= 2:
+                return False
+        else:
+            if bed.last_watered_at.date() >= datetime.utcnow().date():
+                return False
+    return True
+
+
+def get_max_beds(db: Session, player_id: int) -> int:
+    base = balance.MAX_BEDS_PER_PLAYER
+    if has_perk(db, player_id, "extra_bed"):
+        base += 1
+    return base
