@@ -114,7 +114,7 @@ def use_potion(db: Session, player_id: int, inventory_id: int) -> dict:
 
 
 def has_perk(db: Session, player_id: int, perk_code: str) -> bool:    
-   """Проверяет, есть ли у игрока активный перк."""
+    """Проверяет, есть ли у игрока активный перк."""
     perk = db.query(Perk).filter(
         Perk.player_id == player_id,
         Perk.perk_code == perk_code,
@@ -166,4 +166,3 @@ def add_experience(db: Session, player_id: int, amount: int, reason: str = "") -
 
     db.commit()
     return player
-    

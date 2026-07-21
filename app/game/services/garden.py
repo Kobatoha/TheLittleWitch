@@ -8,16 +8,16 @@ from app.core import balance
 from app.game import formulas
 from app.game.utils import format_dt
 from app.game.moon import get_essence_bonus_for_night, get_moon_phase
+from app.game.services.logging import log_action
+from app.game.services.profile import has_perk
+from app.game.services.inventory import add_item_to_inventory
 
 from app.models.garden_bed import GardenBed
 from app.models.inventory import Inventory
 from app.models.item import Item
 from app.models.plant import Plant
 from app.models.player import Player
-
-from app.models.recipe import Recipe
-from app.models.level_reward import LevelReward
-from app.models.perk import Perk
+from app.models.care_log import CareLog
 
 
 def get_player_garden(db: Session, player_id: int):
@@ -95,7 +95,6 @@ def water_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     db.refresh(bed)
     return bed
 
-
 def can_water_bed(db: Session, bed: GardenBed, player_id: int) -> bool:
     if bed.is_dead or bed.plant_id is None:
         return False
@@ -116,7 +115,6 @@ def can_water_bed(db: Session, bed: GardenBed, player_id: int) -> bool:
             if bed.last_watered_at.date() >= datetime.utcnow().date():
                 return False
     return True
-
 
 def clean_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     """Прополка: +2 Эссенции, +5 Живучести. Лимит — раз в сутки."""
@@ -159,7 +157,6 @@ def clean_bed(db: Session, player_id: int, bed_id: int) -> GardenBed:
     db.refresh(bed)
     return bed
  
-
 def moon_bath(db: Session, player_id: int, bed_id: int) -> GardenBed:
     """Выставить растение под лунный свет. Бонус зависит от фазы луны. Раз в сутки."""
     bed = db.query(GardenBed).filter(
@@ -200,7 +197,6 @@ def moon_bath(db: Session, player_id: int, bed_id: int) -> GardenBed:
     db.commit()
     db.refresh(bed)
     return bed
-
 
 def use_growth_spark(db: Session, player_id: int, bed_id: int) -> GardenBed:
     bed = db.query(GardenBed).filter(

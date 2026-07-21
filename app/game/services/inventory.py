@@ -4,6 +4,8 @@ from app.models.inventory import Inventory
 from app.models.item import Item
 from app.models.player import Player
 
+from app.game.services.profile import has_perk
+
 
 def add_item_to_inventory(db: Session, player_id: int, item_id: int, quantity: int = 1, quality: str = "Обычный", source_bed_id: int = None) -> Inventory:
     """Добавляет предмет в инвентарь. Если такой же уже есть — увеличивает количество."""

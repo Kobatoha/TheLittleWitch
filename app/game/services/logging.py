@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from app.models.care_log import CareLog
 
 
-
 def log_action(
     db: Session, 
     player_id: int, 
