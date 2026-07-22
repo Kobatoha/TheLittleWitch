@@ -28,6 +28,11 @@ def brew_potion(db: Session, player_id: int, recipe_id: int) -> dict:
                 item = db.query(Item).filter(Item.id == ing_id).first()
                 raise ValueError(f"Не хватает: {item.name if item else '???'}")
             ingredients.append(inv)
+    
+    ingredient_names = []
+    for inv in ingredients:
+        _ = inv.item.name
+        ingredient_names.append(inv.item.name)
 
     # Считаем шанс успеха с бонусом за качество
     success_chance = recipe.base_success_chance
@@ -64,6 +69,6 @@ def brew_potion(db: Session, player_id: int, recipe_id: int) -> dict:
         "quantity": recipe.result_quantity,
         "success_chance": success_chance,
         "roll": roll,
-        "ingredients_used": [inv.item.name for inv in ingredients]
+        "ingredients_used": ingredient_names
     }
     

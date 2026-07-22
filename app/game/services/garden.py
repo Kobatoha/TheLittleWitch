@@ -9,7 +9,7 @@ from app.game import formulas
 from app.game.utils import format_dt
 from app.game.moon import get_essence_bonus_for_night, get_moon_phase
 from app.game.services.logging import log_action
-from app.game.services.profile import has_perk
+from app.game.services.profile import has_perk, get_max_beds
 from app.game.services.inventory import add_item_to_inventory
 
 from app.models.garden_bed import GardenBed

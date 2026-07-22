@@ -3,7 +3,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
