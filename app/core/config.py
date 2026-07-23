@@ -11,5 +11,5 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATABASE_PATH.as_posix()}")
 
 # Временный ID игрока (потом заменим на авторизацию)
-TEMP_PLAYER_ID = 1
+TEMP_PLAYER_ID: int = 1
 

@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -11,6 +12,7 @@ from app.game.inventory_router import router as inventory_router
 from app.game.shop_router import router as shop_router
 from app.game.brew_router import router as brew_router
 from app.core.config import SECRET_KEY
+from app.core.exceptions import GameError
 
 
 @asynccontextmanager
@@ -40,3 +42,14 @@ def root():
         "admin": "/admin",
         "docs": "/docs",
     }
+
+@app.exception_handler(GameError)
+async def game_error_handler(request, exc: GameError):
+    return JSONResponse(
+        status_code=exc.http_status,
+        content={
+            "detail": exc.message,
+            "code": exc.code.value,
+            "details": exc.details,
+        }
+    )

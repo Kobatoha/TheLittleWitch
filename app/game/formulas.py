@@ -4,10 +4,13 @@
 Принимают числа → возвращают числа.
 """
 import random
+
+from sqlalchemy import Column
+
 from app.core import balance
 
 
-def get_stage_name(growth_stage: int) -> str:
+def get_stage_name(growth_stage: Column[int]) -> str:
     for threshold, name in reversed(balance.STAGES):
         if growth_stage >= threshold:
             return name
