@@ -90,7 +90,7 @@ class GardenService:
     def water_bed(self, bed_id: int) -> GardenBed:
         bed = self._get_living_bed(bed_id)
 
-        if not bed.can_water:
+        if not self.can_water_bed(bed):
             raise GameError(ErrorCode.WATER_ALREADY_USED)
 
         plant = bed.plant
@@ -231,6 +231,8 @@ class GardenService:
 
     def harvest_bed(self, bed_id: int) -> dict:
         bed = self._get_living_bed(bed_id)
+        if not bed.can_harvest:
+            raise GameError(ErrorCode.PLANT_NOT_READY)
 
         plant = bed.plant
         result = {

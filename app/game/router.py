@@ -70,7 +70,7 @@ def bed_to_dict(bed: GardenBed) -> dict:
 
 
 @router.get("/garden")
-def get_garden(garden: GardenService = Depends(get_garden_service)) -> list[dict[str, str]]:
+def get_garden(garden: GardenService = Depends(get_garden_service)) -> list[dict]:
     beds = garden.get_player_garden()
     return [bed_to_dict(bed) for bed in beds]
 

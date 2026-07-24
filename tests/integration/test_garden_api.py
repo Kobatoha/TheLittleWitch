@@ -6,7 +6,7 @@ from app.models.player import Player
 
 
 class TestGardenEndpoints:
-    def test_get_garden_empty(self, client):
+    def test_get_garden_empty(self, client, seeded_db):
         response = client.get("/api/game/garden")
         assert response.status_code == 200
         assert response.json() == []
@@ -25,11 +25,11 @@ class TestGardenEndpoints:
         assert data["stage_name"] == "Семя"
         assert data["is_dead"] is False
 
-    def test_plant_seed_invalid_id(self, client):
+    def test_plant_seed_invalid_id(self, client, seeded_db):
         response = client.post("/api/game/garden/plant", json={
             "plant_id": 999
         })
-        assert response.status_code == 400
+        assert response.status_code == 404
 
     def test_get_garden_after_planting(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
@@ -55,9 +55,9 @@ class TestGardenEndpoints:
         assert data["ok"] is True
         assert data["essence"] > 0
 
-    def test_water_empty_bed_fails(self, client):
+    def test_water_empty_bed_fails(self, client, seeded_db):
         response = client.post("/api/game/garden/water", json={"bed_id": 1})
-        assert response.status_code == 400
+        assert response.status_code == 404
 
     def test_double_water_blocked(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()

@@ -28,10 +28,14 @@ class GardenBedOut(BaseModel):
     is_dead: bool
     can_water: bool
     can_harvest: bool
+    can_clean: bool = False
+    can_moon_bath: bool = False
+    essence_bar_max: int = 200
     recovery_until: Optional[str] = None
     recovery_until_str: Optional[str] = None
     hours_until_update: int
     planted_at: Optional[str] = None
+    icon: Optional[str] = None
 
 
 class HarvestItemOut(BaseModel):
