@@ -1,5 +1,6 @@
 from app.models.item import Item
 from app.models.inventory import Inventory
+from app.models.player import Player
 
 
 class TestInventoryEndpoints:
@@ -87,7 +88,6 @@ class TestInventoryEndpoints:
         seeded_db.add(inv)
         seeded_db.commit()
 
-        from app.models.player import Player
         player_before = seeded_db.query(Player).filter(Player.id == 1).first()
         xp_before = player_before.experience
 

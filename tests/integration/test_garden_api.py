@@ -1,8 +1,12 @@
-import pytest
+from datetime import datetime, timedelta
 
+from app.core.constants import ITEM_GROWTH_SPARK
+from app.models import GardenBed
 from app.models.plant import Plant
 from app.models.user import User
 from app.models.player import Player
+from app.models.inventory import Inventory
+from app.models.item import Item
 
 
 class TestGardenEndpoints:
@@ -118,3 +122,107 @@ class TestGardenEndpoints:
         response = client.get("/api/game/garden/page")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
+
+    def test_harvest_success_after_potion(self, client, seeded_db):
+        plant = seeded_db.query(Plant).first()
+
+        seed_plant = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        bed_id = seed_plant.json()["id"]
+
+        bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        bed.growth_stage = 80
+        seeded_db.commit()
+
+        response = client.post("/api/game/garden/harvest", json={"bed_id": bed_id})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["ok"] is True
+        assert len(data["main_harvest"]) > 0
+
+    def test_harvest_resets_essence(self, client, seeded_db):
+        plant = seeded_db.query(Plant).first()
+        seed_plant = client.post("api/game/garden/plant", json={"plant_id": plant.id})
+        bed_id = seed_plant.json()["id"]
+
+        bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        bed.growth_stage = 80
+        bed.essence = 150
+        seeded_db.commit()
+
+        client.post("api/game/garden/harvest", json={"bed_id": bed_id})
+
+        seeded_db.expire_all()
+        bed_after = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        assert bed_after.essence == 0
+
+    def test_harvest_reduces_vitality(self, client, seeded_db):
+        plant = seeded_db.query(Plant).first()
+        seed_plant = client.post("api/game/garden/plant", json={"plant_id": plant.id})
+        bed_id = seed_plant.json()["id"]
+
+        bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        bed.growth_stage = 80
+        bed.vitality = 100
+        seeded_db.commit()
+
+        client.post("api/game/garden/harvest", json={"bed_id": bed_id})
+
+        seeded_db.expire_all()
+        bed_after = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        assert bed_after.essence < 100
+
+    def test_daily_update_advances_growth(self, client, seeded_db):
+        plant = seeded_db.query(Plant).first()
+        seed_plant = client.post("api/game/garden/plant", json={"plant_id": plant.id})
+        bed_id = seed_plant.json()["id"]
+
+        bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        original_stage = bed.growth_stage
+        bed.last_daily_update = datetime.utcnow() - timedelta(hours=25)
+        seeded_db.commit()
+
+        client.get("/api/game/garden/page")
+
+        seeded_db.expire_all()
+        bed_after = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        assert bed_after.growth_stage > original_stage
+
+    def test_daily_update_reduces_vitality(self, client, seeded_db):
+        plant = seeded_db.query(Plant).first()
+        seed_plant = client.post("api/game/garden/plant", json={"plant_id": plant.id})
+        bed_id = seed_plant.json()["id"]
+
+        bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        bed.vitality = 100
+        bed.last_daily_update = datetime.utcnow() - timedelta(hours=25)
+        seeded_db.commit()
+
+        client.get("/api/game/garden/page")
+
+        seeded_db.expire_all()
+        bed_after = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        assert bed_after.vitality < 100
+
+    def test_use_spark_advances_growth(self, client, seeded_db):
+        plant = seeded_db.query(Plant).first()
+        seed_plant = client.post("api/game/garden/plant", json={"plant_id": plant.id})
+        bed_id = seed_plant.json()["id"]
+
+        spark = seeded_db.query(Item).filter(Item.name == ITEM_GROWTH_SPARK).first()
+        if not spark:
+            spark = Item(name=ITEM_GROWTH_SPARK, item_type="consumable", rarity="uncommon")
+            seeded_db.add(spark)
+            seeded_db.commit()
+
+        seeded_db.add(Inventory(player_id=1, item_id=spark.id, quantity=5, quality="Обычный"))
+        seeded_db.commit()
+
+        bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        original_stage = bed.growth_stage
+
+        response = client.post("/api/game/garden/use-spark", json={"bed_id": bed_id})
+        assert response.status_code == 200
+
+        seeded_db.expire_all()
+        bed_after = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        assert bed_after.growth_stage > original_stage

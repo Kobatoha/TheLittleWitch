@@ -1,4 +1,4 @@
-from app.models import Plant
+from app.models import Plant, LevelReward
 from app.models.player import Player
 from app.models.item import Item
 from app.models.inventory import Inventory
@@ -115,3 +115,66 @@ class TestProfileEndpoints:
         # Ещё одна — ошибка
         r = client_with_perks.post("/api/game/garden/plant", json={"plant_id": plant.id})
         assert r.status_code == 400
+
+    def test_use_potion_triggers_level_up(self, client_with_perks, seeded_db_with_perks):
+        """Выпить зелье — срабатывает левел-ап."""
+        player = seeded_db_with_perks.query(Player).filter(Player.id == 1).first()
+        player.experience = 90
+        player.xp_to_next = 100
+        seeded_db_with_perks.commit()
+
+        potion = seeded_db_with_perks.query(Item).filter(Item.item_type == "potion").first()
+        inv = Inventory(player_id=1, item_id=potion.id, quantity=1, quality="Обычный")
+        seeded_db_with_perks.add(inv)
+        seeded_db_with_perks.commit()
+
+        response = client_with_perks.post("/api/game/inventory/use-potion", json={"inventory_id": inv.id})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["leveled_up"] is True
+        assert data["level"] == 2
+
+    def test_use_potion_awards_coins_reward(self, client_with_perks, seeded_db_with_perks):
+        """Левел-ап с монетной наградой — монеты начислены."""
+        lr = LevelReward(level=2, reward_type="coins", reward_name="500 монет", reward_value=500)
+        seeded_db_with_perks.add(lr)
+        seeded_db_with_perks.commit()
+
+        player = seeded_db_with_perks.query(Player).filter(Player.id == 1).first()
+        player.experience = 90
+        player.xp_to_next = 100
+        coins_before = player.coins
+        seeded_db_with_perks.commit()
+
+        potion = seeded_db_with_perks.query(Item).filter(Item.item_type == "potion").first()
+        inv = Inventory(player_id=1, item_id=potion.id, quantity=1, quality="Обычный")
+        seeded_db_with_perks.add(inv)
+        seeded_db_with_perks.commit()
+
+        client_with_perks.post("/api/game/inventory/use-potion", json={"inventory_id": inv.id})
+
+        seeded_db_with_perks.expire_all()
+        player_after = seeded_db_with_perks.query(Player).filter(Player.id == 1).first()
+        assert player_after.coins > coins_before
+
+    def test_use_potion_awards_title(self, client_with_perks, seeded_db_with_perks):
+        """Левел-ап с титулом — титул меняется."""
+        lr = LevelReward(level=2, reward_type="title", reward_name="Мастер-травница")
+        seeded_db_with_perks.add(lr)
+        seeded_db_with_perks.commit()
+
+        player = seeded_db_with_perks.query(Player).filter(Player.id == 1).first()
+        player.experience = 90
+        player.xp_to_next = 100
+        seeded_db_with_perks.commit()
+
+        potion = seeded_db_with_perks.query(Item).filter(Item.item_type == "potion").first()
+        inv = Inventory(player_id=1, item_id=potion.id, quantity=1, quality="Обычный")
+        seeded_db_with_perks.add(inv)
+        seeded_db_with_perks.commit()
+
+        client_with_perks.post("/api/game/inventory/use-potion", json={"inventory_id": inv.id})
+
+        seeded_db_with_perks.expire_all()
+        player_after = seeded_db_with_perks.query(Player).filter(Player.id == 1).first()
+        assert player_after.title == "Мастер-травница"
