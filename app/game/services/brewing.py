@@ -3,6 +3,7 @@ import random
 from sqlalchemy.orm import Session
 
 from app.game.services.inventory import add_item_to_inventory
+from app.models import Player
 
 from app.models.inventory import Inventory
 from app.models.item import Item
@@ -62,7 +63,10 @@ def brew_potion(db: Session, player_id: int, recipe_id: int) -> dict:
             db.delete(inv)
 
     result = add_item_to_inventory(db, player_id, recipe.result_item_id, recipe.result_quantity, "Обычный")
-    
+
+    player = db.query(Player).filter(Player.id == player_id).first()
+
+    player.total_potions_brewed += 1
     db.commit()
     return {
         "potion_name": recipe.result_item.name,

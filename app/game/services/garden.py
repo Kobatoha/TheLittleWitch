@@ -178,6 +178,7 @@ class GardenService:
         f"❤️+{vitality_bonus}% ✨+{bonus}",
         "positive" if bonus >= 10 else "neutral")
 
+        self.player.total_moon_baths += 1
         self.db.commit()
         self.db.refresh(bed)
         return bed
@@ -315,6 +316,7 @@ class GardenService:
             "positive",
             details)
 
+        self.player.total_harvests += 1
         self.db.commit()
         return result
 

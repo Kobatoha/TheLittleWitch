@@ -62,6 +62,7 @@ def sell_item(db: Session, player_id: int, inventory_id: int, sell_quantity: int
         raise ValueError("Игрок не найден")
     player.coins += total_price
 
+    player.total_coins_earned += total_price
     db.commit()
 
     return {

@@ -76,7 +76,6 @@ def use_potion(db: Session, player_id: int, inventory_id: int) -> dict:
     experience_gained = effects["experience"]
     player = db.query(Player).filter(Player.id == player_id).first()
     player.experience += experience_gained
-    player.total_potions_brewed += 1
 
     # Проверяем левел-ап
     leveled_up = False
