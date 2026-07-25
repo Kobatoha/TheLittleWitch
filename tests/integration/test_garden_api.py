@@ -118,12 +118,27 @@ class TestGardenEndpoints:
         data = response.json()
         assert data["ok"] is True
 
+    def test_moon_bath_increases_stat(self, client, seeded_db):
+        """После лунной ванны счётчик увеличивается."""
+        plant = seeded_db.query(Plant).first()
+        r = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        bed_id = r.json()["id"]
+
+        player_before = seeded_db.query(Player).filter(Player.id == 1).first()
+        baths_before = player_before.total_moon_baths
+
+        client.post("/api/game/garden/moon-bath", json={"bed_id": bed_id})
+
+        seeded_db.expire_all()
+        player_after = seeded_db.query(Player).filter(Player.id == 1).first()
+        assert player_after.total_moon_baths == baths_before + 1
+
     def test_page_returns_html(self, client, seeded_db):
         response = client.get("/api/game/garden/page")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
 
-    def test_harvest_success_after_potion(self, client, seeded_db):
+    def test_harvest_success_after_growth(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
 
         seed_plant = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
@@ -138,6 +153,25 @@ class TestGardenEndpoints:
         data = response.json()
         assert data["ok"] is True
         assert len(data["main_harvest"]) > 0
+
+    def test_harvest_increases_harvest_stat(self, client, seeded_db):
+        """После сбора счётчик урожаев увеличивается."""
+        plant = seeded_db.query(Plant).first()
+        r = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        bed_id = r.json()["id"]
+
+        bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        bed.growth_stage = 80
+        seeded_db.commit()
+
+        player_before = seeded_db.query(Player).filter(Player.id == 1).first()
+        harvests_before = player_before.total_harvests
+
+        client.post("/api/game/garden/harvest", json={"bed_id": bed_id})
+
+        seeded_db.expire_all()
+        player_after = seeded_db.query(Player).filter(Player.id == 1).first()
+        assert player_after.total_harvests == harvests_before + 1
 
     def test_harvest_resets_essence(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()

@@ -37,6 +37,22 @@ class TestShopEndpoints:
         player_after = seeded_db.query(Player).filter(Player.id == 1).first()
         assert player_after.coins > coins_before
 
+    def test_sell_item_increases_coins_earned_stat(self, client, seeded_db):
+        """Продажа увеличивает счётчик заработанных монет."""
+        item = seeded_db.query(Item).first()
+        inv = Inventory(player_id=1, item_id=item.id, quantity=5, quality="Обычный")
+        seeded_db.add(inv)
+        seeded_db.commit()
+
+        player_before = seeded_db.query(Player).filter(Player.id == 1).first()
+        earned_before = player_before.total_coins_earned
+
+        client.post("/api/game/shop/sell", json={"inventory_id": inv.id, "quantity": 2})
+
+        seeded_db.expire_all()
+        player_after = seeded_db.query(Player).filter(Player.id == 1).first()
+        assert player_after.total_coins_earned > earned_before
+
     def test_sell_more_than_have_fails(self, client, seeded_db):
         item = seeded_db.query(Item).first()
         inv = Inventory(
