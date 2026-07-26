@@ -260,3 +260,22 @@ class TestGardenEndpoints:
         seeded_db.expire_all()
         bed_after = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
         assert bed_after.growth_stage > original_stage
+
+    def test_plant_removed_after_exhausted(self, client, seeded_db):
+        """После исчерпания сборов грядка удаляется."""
+        plant = seeded_db.query(Plant).first()
+        r = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        bed_id = r.json()["id"]
+
+        bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        bed.growth_stage = 95
+        bed.harvests_left = 1
+        seeded_db.commit()
+
+        resp = client.post("/api/game/garden/harvest", json={"bed_id": bed_id})
+        assert resp.status_code == 200
+
+        # Грядка удалена
+        seeded_db.expire_all()
+        bed_after = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
+        assert bed_after is None

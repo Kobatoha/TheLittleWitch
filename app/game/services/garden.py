@@ -81,6 +81,7 @@ class GardenService:
         bed.essence = 0
         bed.growth_stage = 0
         bed.planted_at = datetime.utcnow()
+        bed.harvests_left = 3
 
         self.db.add(bed)
         self.db.commit()
@@ -230,64 +231,100 @@ class GardenService:
         self.db.refresh(bed)
         return bed
 
-    def harvest_bed(self, bed_id: int) -> dict:
-        bed = self._get_living_bed(bed_id)
-        if not bed.can_harvest:
-            raise GameError(ErrorCode.PLANT_NOT_READY)
-
-        plant = bed.plant
-        result = {
-            "plant_name": plant.name,
-            "stage": bed.stage_name,
-            "main_harvest": [],
-            "bonus_harvest": [],
-            "rare_harvest": [],
-        }
-
+    def _roll_main_harvest(self, bed: GardenBed) -> list[dict]:
+        """Бросок 1: Основной урожай."""
         main_multiplier = formulas.get_harvest_multiplier(bed.growth_stage)
-
         quality = formulas.get_quality(bed.vitality)
 
-        if plant.harvest_item_id:
-            item = self.db.query(Item).filter(Item.id == plant.harvest_item_id).first()
+        if bed.plant.harvest_item_id:
+            item = self.db.query(Item).filter(Item.id == bed.plant.harvest_item_id).first()
         else:
             item = None
 
         if not item:
-            item = Item(name=f"Ингредиент: {plant.name}", item_type="ingredient", rarity="common")
+            item = Item(name=f"Ингредиент: {bed.plant.name}", item_type="ingredient", rarity="common")
             self.db.add(item)
             self.db.flush()
 
         add_item_to_inventory(self.db, self.player_id, item.id, main_multiplier, quality, bed.id)
-        
-        result["main_harvest"].append({
-            "name": item.name,
-            "quantity": main_multiplier,
-            "quality": quality
-        })
 
+        return [{"name": item.name, "quantity": main_multiplier, "quality": quality}]
+
+    def _roll_bonus_drops(self, bed: GardenBed) -> list[dict]:
+        """Бросок 2: Бонусный дроп."""
         total_bonus = formulas.roll_bonus_drops(bed.essence)
+        if total_bonus <= 0:
+            return []
 
-        if total_bonus > 0:
-            bonus_items = self.db.query(Item).filter(Item.item_type == "bonus").all()
-            if bonus_items:
-                for _ in range(total_bonus):
-                    bonus_item = random.choices(
-                        bonus_items,
-                        weights=[100 if i.rarity == "common" else 40 if i.rarity == "uncommon" else 10 for i in bonus_items],
-                        k=1
-                    )[0]
-                    add_item_to_inventory(self.db, self.player_id, bonus_item.id, 1, "Обычный", bed.id)
-                    result["bonus_harvest"].append({"name": bonus_item.name, "rarity": bonus_item.rarity})
+        bonus_items = self.db.query(Item).filter(Item.item_type == "bonus").all()
+        if not bonus_items:
+            return []
 
-        rare_luck = has_perk(self.db, plant.id, PERK_RARE_LUCK_10)
-        if formulas.roll_rare_drop(bed.essence, bed.growth_stage, rare_luck_perk=rare_luck):
-            rare_items = self.db.query(Item).filter(Item.item_type == "rare").all()
-            if rare_items:
-                rare_item = random.choice(rare_items)
-                add_item_to_inventory(self.db, self.player_id, rare_item.id, 1, "Редкий", bed.id)
-                result["rare_harvest"].append({"name": rare_item.name, "rarity": rare_item.rarity})
+        result = []
+        for _ in range(total_bonus):
+            bonus_item = random.choices(
+                bonus_items,
+                weights=[100 if i.rarity == "common" else 40 if i.rarity == "uncommon" else 10 for i in bonus_items],
+                k=1
+            )[0]
+            add_item_to_inventory(self.db, self.player_id, bonus_item.id, 1, "Обычный", bed.id)
+            result.append({"name": bonus_item.name, "rarity": bonus_item.rarity})
 
+        return result
+
+    def _roll_rare_drop(self, bed: GardenBed) -> list[dict]:
+        """Бросок 3: Редкая удача."""
+        rare_luck = has_perk(self.db, self.player_id, PERK_RARE_LUCK_10)
+        if not formulas.roll_rare_drop(bed.essence, bed.growth_stage, rare_luck_perk=rare_luck):
+            return []
+
+        rare_items = self.db.query(Item).filter(Item.item_type == "rare").all()
+        if not rare_items:
+            return []
+
+        rare_item = random.choice(rare_items)
+        add_item_to_inventory(self.db, self.player_id, rare_item.id, 1, "Редкий", bed.id)
+        return [{"name": rare_item.name, "rarity": rare_item.rarity}]
+
+    def _roll_seed_drop(self, bed: GardenBed) -> list[dict]:
+        """Бросок 4: Семечко (шанс зависит от стадии)."""
+        if bed.growth_stage >= 95:
+            seed_chance = 0.75
+        elif bed.growth_stage >= 80:
+            seed_chance = 0.50
+        elif bed.growth_stage >= 60:
+            seed_chance = 0.25
+        else:
+            return []
+
+        if random.random() >= seed_chance:
+            return []
+
+        # Уровень семечка
+        if bed.growth_stage >= 95 and random.random() < 0.25:
+            seed_level = 2
+        else:
+            seed_level = 1
+
+        seed_name = f"Семечко {bed.plant.name} ур.{seed_level}"
+        seed_item = self.db.query(Item).filter(Item.name == seed_name).first()
+        if not seed_item:
+            seed_item = Item(
+                name=seed_name,
+                item_type="seed",
+                rarity="rare" if seed_level == 2 else "uncommon",
+                description=f"Семечко уровня {seed_level}. Улучшенные характеристики.",
+                sell_price=50 if seed_level == 2 else 20,
+                potency_boost=10 if seed_level == 2 else 0
+            )
+            self.db.add(seed_item)
+            self.db.flush()
+
+        add_item_to_inventory(self.db, self.player_id, seed_item.id, 1, "Обычный", bed.id)
+        return [{"name": seed_item.name, "rarity": seed_item.rarity}]
+
+    def _apply_harvest_consequences(self, bed: GardenBed) -> None:
+        """Последствия сбора: сброс эссенции, урон живучести, откат стадии."""
         bed.essence = 0
         bed.vitality = max(bed.vitality - balance.HARVEST_VITALITY_COST, 0)
         bed.growth_stage = max(
@@ -296,9 +333,25 @@ class GardenService:
         )
         bed.last_harvested_at = datetime.utcnow()
         bed.recovery_until = datetime.utcnow() + timedelta(hours=balance.RECOVERY_HOURS)
+        bed.harvests_left -= 1
 
-        if bed.vitality <= 0:
-            bed.vitality = 0  # смерть
+        if bed.harvests_left <= 0 or bed.vitality <= 0:
+            self.db.delete(bed)
+
+    def harvest_bed(self, bed_id: int) -> dict:
+        bed = self._get_living_bed(bed_id)
+        if not bed.can_harvest:
+            raise GameError(ErrorCode.PLANT_NOT_READY)
+
+        result = {
+            "plant_name": bed.plant.name,
+            "stage": bed.stage_name,
+            "main_harvest": self._roll_main_harvest(bed),
+            "bonus_harvest": self._roll_bonus_drops(bed),
+            "rare_harvest": self._roll_rare_drop(bed) + self._roll_seed_drop(bed),
+        }
+
+        self._apply_harvest_consequences(bed)
 
         loot_parts = []
         for h in result["main_harvest"]:
@@ -307,14 +360,12 @@ class GardenService:
             loot_parts.append(f"{b['name']}")
         for r in result["rare_harvest"]:
             loot_parts.append(f"🌟 {r['name']}")
-
         details = " | ".join(loot_parts) if loot_parts else None
 
         log_action(self.db, self.player_id, bed.id, ACTION_HARVEST,
             "Сбор урожая",
             f"❤️-{balance.HARVEST_VITALITY_COST}% 🌱-{balance.HARVEST_STAGE_ROLLBACK}%",
-            "positive",
-            details)
+            "positive", details)
 
         self.player.total_harvests += 1
         self.db.commit()

@@ -28,6 +28,8 @@ class GardenBed(Base):
     last_harvested_at = Column(DateTime, nullable=True)     # когда последний раз собирали
     last_moon_bath_at = Column(DateTime, nullable=True)     # когда последний раз была лунная ванна
 
+    harvests_left = Column(Integer, default=3)
+
     recovery_until = Column(DateTime, nullable=True)        # до какого времени растение восстанавливается
     last_daily_update = Column(DateTime, nullable=True)     # когда было последнее ежедневное обновление
     
@@ -112,3 +114,8 @@ class GardenBed(Base):
         if self.last_moon_bath_at and self.last_moon_bath_at.date() >= datetime.utcnow().date():
             return False
         return True
+
+    @property
+    def is_exhausted(self) -> bool:
+        """Растение исчерпало сборы и превратится в труху."""
+        return self.harvests_left <= 0 and self.plant_id is not None
