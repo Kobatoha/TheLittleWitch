@@ -123,8 +123,18 @@ def garden_page(request: Request, db: Session = Depends(get_db), garden: GardenS
 
 
 @router.post("/garden/harvest")
-def harvest_bed(request: HarvestRequest, garden: GardenService = Depends(get_garden_service)):
+def harvest_bed(
+        request: HarvestRequest,
+        db: Session = Depends(get_db),
+        garden: GardenService = Depends(get_garden_service)
+):
     result = garden.harvest_bed(request.bed_id)
+
+    # Проверяем, удалена ли грядка
+    bed_exists = db.query(GardenBed).filter(GardenBed.id == request.bed_id).first()
+    if not bed_exists:
+        return {"ok": True, "redirect": "/api/game/garden/page", **result}
+
     return {"ok": True, **result}
 
 

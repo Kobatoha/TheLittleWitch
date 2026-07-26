@@ -377,11 +377,16 @@
                 });
                 if (r.ok) {
                     const d = await r.json();
+                    if (d.redirect) {
+                        window.location.href = d.redirect;
+                        return;
+                    }
                     const main = d.main_harvest.map(h => `${h.quantity}x ${h.name} (${h.quality})`).join(", ");
                     const bonus = d.bonus_harvest.length > 0 ? " | 🎁 " + d.bonus_harvest.map(b => b.name).join(", ") : "";
                     const rare = d.rare_harvest.length > 0 ? " | 🌟 " + d.rare_harvest.map(r => r.name).join(", ") : "";
                     showMessage("🧺 " + main + bonus + rare, "success");
                     setTimeout(() => location.reload(), 3000);
+
                 } else {
                     const e = await r.json();
                     showMessage("❌ " + e.detail, "error");

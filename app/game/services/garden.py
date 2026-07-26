@@ -336,6 +336,7 @@ class GardenService:
         bed.harvests_left -= 1
 
         if bed.harvests_left <= 0 or bed.vitality <= 0:
+            self.db.query(CareLog).filter(CareLog.garden_bed_id == bed.id).delete()
             self.db.delete(bed)
 
     def harvest_bed(self, bed_id: int) -> dict:
