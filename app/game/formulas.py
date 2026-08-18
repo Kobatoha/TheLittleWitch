@@ -3,6 +3,7 @@
 Чистые функции без побочных эффектов.
 Принимают числа → возвращают числа.
 """
+import math
 import random
 
 from sqlalchemy import Column
@@ -71,4 +72,9 @@ def calculate_night_essence_decay(essence: int, was_watered_yesterday: bool) -> 
 
 def can_level_up(growth_stage: int) -> bool:
     return growth_stage < balance.WITHER_START_STAGE
-    
+
+def get_level_bonus(level: int, max_bonus: float, decay: float) -> float:
+    """Затухающий бонус от уровня. Никогда не достигнет max_bonus."""
+    if level <= 0:
+        return 0
+    return max_bonus * (1 - math.exp(-level / decay))

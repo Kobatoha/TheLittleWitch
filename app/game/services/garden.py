@@ -56,7 +56,11 @@ class GardenService:
             GardenBed.player_id == self.player_id
         ).all()
 
-    def plant_seed(self, plant_id: int) -> GardenBed:
+    def plant_seed(self, seed_item_id: int) -> GardenBed:
+        """
+        Посадить растение из семечка.
+        seed_item_id — ID предмета-семечка в инвентаре.
+        """
         max_beds = get_max_beds(self.db, self.player_id)
         beds_count = self.db.query(GardenBed).filter(
             GardenBed.player_id == self.player_id,
@@ -65,7 +69,21 @@ class GardenService:
         if beds_count >= max_beds:
             raise GameError(ErrorCode.MAX_BEDS_REACHED)
 
-        plant = self.db.query(Plant).filter(Plant.id == plant_id).first()
+        # Ищем семечко в инвентаре
+        seed_inv = self.db.query(Inventory).filter(
+            Inventory.id == seed_item_id,
+            Inventory.player_id == self.player_id,
+            Inventory.quantity > 0
+        ).first()
+        if not seed_inv:
+            raise GameError(ErrorCode.INVENTORY_ITEM_NOT_FOUND)
+
+        seed_item = seed_inv.item
+        if seed_item.item_type != "seed":
+            raise GameError(ErrorCode.NOT_A_SEED)
+
+        # Определяем растение и уровень из семечка
+        plant = self.db.query(Plant).filter(Plant.id == seed_item.linked_plant_id).first()
         if not plant:
             raise GameError(ErrorCode.PLANT_NOT_FOUND)
 
@@ -76,12 +94,21 @@ class GardenService:
         if not bed:
             bed = GardenBed(player_id=self.player_id)
 
-        bed.plant_id = plant_id
-        bed.vitality = plant.base_vitality
+        # Уровень из potency_boost семечка
+        plant_level = seed_item.potency_boost or 1
+
+        bed.plant_id = plant.id
+        bed.plant_level = plant_level
+        bed.vitality = plant.base_vitality + plant_level * 2  # +2 живучести за уровень
         bed.essence = 0
         bed.growth_stage = 0
         bed.planted_at = datetime.utcnow()
         bed.harvests_left = 3
+
+        # Тратим семечко
+        seed_inv.quantity -= 1
+        if seed_inv.quantity <= 0:
+            self.db.delete(seed_inv)
 
         self.db.add(bed)
         self.db.commit()
@@ -233,7 +260,12 @@ class GardenService:
 
     def _roll_main_harvest(self, bed: GardenBed) -> list[dict]:
         """Бросок 1: Основной урожай."""
-        main_multiplier = formulas.get_harvest_multiplier(bed.growth_stage)
+        base_multiplier = formulas.get_harvest_multiplier(bed.growth_stage)
+
+        # Бонус к количеству от уровня растения
+        level_bonus_quantity = formulas.get_level_bonus(bed.plant_level, 3, 15)
+        main_multiplier = base_multiplier + int(level_bonus_quantity)
+
         quality = formulas.get_quality(bed.vitality)
 
         if bed.plant.harvest_item_id:
@@ -287,7 +319,7 @@ class GardenService:
         return [{"name": rare_item.name, "rarity": rare_item.rarity}]
 
     def _roll_seed_drop(self, bed: GardenBed) -> list[dict]:
-        """Бросок 4: Семечко (шанс зависит от стадии)."""
+        """Бросок 4: Семечко (шанс зависит от стадии и уровня растения)."""
         if bed.growth_stage >= 95:
             seed_chance = 0.75
         elif bed.growth_stage >= 80:
@@ -297,14 +329,18 @@ class GardenService:
         else:
             return []
 
+        # Бонус к шансу от уровня растения
+        level_bonus = formulas.get_level_bonus(bed.plant_level, 25, 8)
+        seed_chance = min(seed_chance + level_bonus / 100, 0.95)
+
         if random.random() >= seed_chance:
             return []
 
-        # Уровень семечка
+        # Уровень выпавшего семечка
         if bed.growth_stage >= 95 and random.random() < 0.25:
-            seed_level = 2
+            seed_level = bed.plant_level + 1  # следующий уровень
         else:
-            seed_level = 1
+            seed_level = bed.plant_level  # тот же уровень
 
         seed_name = f"Семечко {bed.plant.name} ур.{seed_level}"
         seed_item = self.db.query(Item).filter(Item.name == seed_name).first()
@@ -312,10 +348,11 @@ class GardenService:
             seed_item = Item(
                 name=seed_name,
                 item_type="seed",
-                rarity="rare" if seed_level == 2 else "uncommon",
-                description=f"Семечко уровня {seed_level}. Улучшенные характеристики.",
-                sell_price=50 if seed_level == 2 else 20,
-                potency_boost=10 if seed_level == 2 else 0
+                rarity="rare" if seed_level > 1 else "uncommon",
+                description=f"Семечко уровня {seed_level}.",
+                sell_price=20 * seed_level,
+                potency_boost=seed_level,
+                linked_plant_id=bed.plant.id
             )
             self.db.add(seed_item)
             self.db.flush()

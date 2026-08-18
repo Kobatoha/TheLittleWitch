@@ -22,7 +22,7 @@ class Plant(Base):
     essence_per_care = Column(Integer, default=12)     # +Эссенции за действие ухода
     growth_per_care = Column(Integer, default=8)       # +% Цикла Роста за действие ухода
     min_harvest_stage = Column(Integer, default=60)    # мин. стадия для сбора (Бутон)
-    base_potency = Column(Integer, default=100)        # Сила Рода (пока константа)
+    level = Column(Integer, default=1)                 # уровень растения
 
     harvest_item_id = Column(Integer, ForeignKey("items.id"), nullable=True)
     harvest_item = relationship("Item", foreign_keys=[harvest_item_id])
