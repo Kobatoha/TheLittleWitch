@@ -60,7 +60,7 @@ class PlantAdmin(ModelView, model=Plant):
         Plant.essence_per_care,
         Plant.growth_per_care,
         Plant.min_harvest_stage,
-        Plant.base_potency,
+        Plant.level,          # ← вместо base_potency
     ]
     column_searchable_list = [Plant.name]
     column_sortable_list = [Plant.id, Plant.name]
@@ -72,7 +72,7 @@ class PlantAdmin(ModelView, model=Plant):
         Plant.essence_per_care,
         Plant.growth_per_care,
         Plant.min_harvest_stage,
-        Plant.base_potency,
+        Plant.level,          # ← вместо base_potency
         Plant.icon_seed,
         Plant.icon_sprout,
         Plant.icon_stem,

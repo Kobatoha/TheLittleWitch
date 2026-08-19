@@ -21,6 +21,7 @@ class GardenBed(Base):
     vitality = Column(Integer, default=100)            # Живучесть (0 = смерть)
     essence = Column(Integer, default=0)               # Эссенция (растёт от ухода)
     growth_stage = Column(Integer, default=0)          # Цикл Роста: 0-100
+    plant_level = Column(Integer, default=1)
 
     # Восстановление и лимиты
     last_watered_at = Column(DateTime, nullable=True)       # когда последний раз поливали

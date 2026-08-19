@@ -401,13 +401,26 @@ class GardenService:
         details = " | ".join(loot_parts) if loot_parts else None
 
         log_action(self.db, self.player_id, bed.id, ACTION_HARVEST,
-            "Сбор урожая",
-            f"❤️-{balance.HARVEST_VITALITY_COST}% 🌱-{balance.HARVEST_STAGE_ROLLBACK}%",
-            "positive", details)
+                   "Сбор урожая",
+                   f"❤️-{balance.HARVEST_VITALITY_COST}% 🌱-{balance.HARVEST_STAGE_ROLLBACK}%",
+                   "positive", details)
 
         self.player.total_harvests += 1
         self.db.commit()
-        return result
+
+        # Если грядка удалена — возвращаем redirect
+        redirect_url = None
+        if bed.harvests_left <= 0 and bed.vitality <= 0:
+            redirect_url = "/api/game/garden/page"
+
+        return {
+            "plant_name": bed.plant_name,
+            "stage": bed.stage_name,
+            "main_harvest": result["main_harvest"],
+            "bonus_harvest": result["bonus_harvest"],
+            "rare_harvest": result["rare_harvest"],
+            "redirect": redirect_url,
+        }
 
     def process_daily_update(self, bed: GardenBed) -> GardenBed:
         now = datetime.utcnow()

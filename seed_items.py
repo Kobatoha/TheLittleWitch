@@ -1,8 +1,15 @@
 from app.core.database import SessionLocal
 from app.models.item import Item
+from app.models.plant import Plant
+
 
 def seed_items():
      db = SessionLocal()
+
+     lily = db.query(Plant).filter(Plant.name == "Лунная лилия").first()
+     mandrake = db.query(Plant).filter(Plant.name == "Мандрагора").first()
+     bog = db.query(Plant).filter(Plant.name == "Шипучка болотная").first()
+
      items = [
           # Основные ингредиенты
           Item(name="Корень мандрагоры", item_type="ingredient", rarity="common",
@@ -43,6 +50,17 @@ def seed_items():
                description="Защищает растение от увядания на 24 часа.", sell_price=120),
           Item(name="Эссенция живучести", item_type="potion", rarity="common",
                description="Восстанавливает 50% живучести растения.", sell_price=40),
+
+          # Семечки
+          Item(name="Семечко Лунная лилия ур.1", item_type="seed", rarity="uncommon",
+               description="Семечко для посадки.", sell_price=20, potency_boost=1,
+               linked_plant_id=lily.id if lily else None),
+          Item(name="Семечко Мандрагора ур.1", item_type="seed", rarity="uncommon",
+               description="Семечко для посадки.", sell_price=20, potency_boost=1,
+               linked_plant_id=mandrake.id if mandrake else None),
+          Item(name="Семечко Шипучка болотная ур.1", item_type="seed", rarity="uncommon",
+               description="Семечко для посадки.", sell_price=20, potency_boost=1,
+               linked_plant_id=bog.id if bog else None),
      ]
 
      for item in items:

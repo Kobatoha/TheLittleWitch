@@ -285,9 +285,9 @@
         <div class="plant-section">
             <h2>Посадить растение</h2>
             <div class="plant-form">
-                <select id="plantSelect">
-                    {% for p in plants %}
-                    <option value="{{ p.id }}">{{ p.name }}</option>
+                <select id="seedSelect">
+                    {% for seed in seeds %}
+                    <option value="{{ seed.inventory_id }}">{{ seed.name }}</option>
                     {% endfor %}
                 </select>
                 <button class="btn" onclick="plantSeed()">Посадить!</button>
@@ -305,13 +305,13 @@
         }
 
         async function plantSeed() {
-            const plantId = document.getElementById("plantSelect").value;
+            const seedId = document.getElementById("seedSelect").value;
             showMessage("Сажаем...", "");
             try {
                 const r = await fetch("/api/game/garden/plant", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ plant_id: parseInt(plantId) })
+                    body: JSON.stringify({ seed_item_id: parseInt(seedId) })
                 });
                 if (r.ok) {
                     showMessage("🌿 Посажено!", "success");

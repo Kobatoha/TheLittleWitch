@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -33,9 +33,6 @@ router = APIRouter()
 
 class WaterRequest(BaseModel):
     bed_id: int
-
-class PlantRequest(BaseModel):
-    plant_id: int
 
 class HarvestRequest(BaseModel):
     bed_id: int
@@ -75,9 +72,13 @@ def get_garden(garden: GardenService = Depends(get_garden_service)) -> list[dict
     return [bed_to_dict(bed) for bed in beds]
 
 
+class SeedPlantRequest(BaseModel):
+    seed_item_id: int
+
+
 @router.post("/garden/plant")
-def plant_seed(request: PlantRequest, garden: GardenService = Depends(get_garden_service)):
-    bed = garden.plant_seed(request.plant_id)
+def plant_seed(request: SeedPlantRequest, garden: GardenService = Depends(get_garden_service)):
+    bed = garden.plant_seed(request.seed_item_id)
     return bed_to_dict(bed)
 
 
@@ -110,7 +111,22 @@ def garden_page(request: Request, db: Session = Depends(get_db), garden: GardenS
             Inventory.item_id == spark_item.id
         ).all()
         spark_count = sum(inv.quantity for inv in spark_invs)
-    player = db.query(Player).filter(Player.id == TEMP_PLAYER_ID).first()    
+
+    player = db.query(Player).filter(Player.id == TEMP_PLAYER_ID).first()
+    seeds = db.query(Inventory, Item).join(
+        Item, Inventory.item_id == Item.id
+    ).filter(
+        Inventory.player_id == TEMP_PLAYER_ID,
+        Inventory.quantity > 0,
+        Item.item_type == "seed"
+    ).all()
+
+    seeds_data = []
+    for inv, item in seeds:
+        seeds_data.append({
+            "inventory_id": inv.id,
+            "name": item.name,
+        })
 
     return templates.TemplateResponse("garden.html", {
         "request": request,
@@ -119,6 +135,7 @@ def garden_page(request: Request, db: Session = Depends(get_db), garden: GardenS
         "now": datetime.utcnow(),
         "spark_count": spark_count,
         "coins": player.coins if player else 0,
+        "seeds": seeds_data,
     })
 
 
@@ -128,14 +145,12 @@ def harvest_bed(
         db: Session = Depends(get_db),
         garden: GardenService = Depends(get_garden_service)
 ):
-    result = garden.harvest_bed(request.bed_id)
+    try:
+        result = garden.harvest_bed(request.bed_id)
+        return {"ok": True, **result}
 
-    # Проверяем, удалена ли грядка
-    bed_exists = db.query(GardenBed).filter(GardenBed.id == request.bed_id).first()
-    if not bed_exists:
-        return {"ok": True, "redirect": "/api/game/garden/page", **result}
-
-    return {"ok": True, **result}
+    except GameError as e:
+        raise HTTPException(status_code=e.http_status, detail=e.message)
 
 
 @router.post("/garden/use-spark")

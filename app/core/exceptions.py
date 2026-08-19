@@ -30,6 +30,7 @@ class ErrorCode(str, Enum):
     MISSING_INGREDIENT = "MISSING_INGREDIENT"
     BREW_FAILED = "BREW_FAILED"
     INVENTORY_ITEM_NOT_FOUND = "INVENTORY_ITEM_NOT_FOUND"
+    NOT_A_SEED = "NOT_A_SEED"
 
     # 500 — Внутренняя ошибка
     SPARK_ITEM_NOT_FOUND = "SPARK_ITEM_NOT_FOUND"
@@ -45,7 +46,7 @@ class ErrorCode(str, Enum):
                   "PLANT_NOT_READY", "MAX_BEDS_REACHED", "WATER_ALREADY_USED",
                   "CLEAN_ALREADY_USED", "MOON_BATH_ALREADY_USED", "MOON_TOO_WEAK",
                   "NO_GROWTH_SPARK", "NOT_ENOUGH_ITEMS", "NOT_POTION",
-                  "MISSING_INGREDIENT", "BREW_FAILED", "INVENTORY_ITEM_NOT_FOUND"],
+                  "MISSING_INGREDIENT", "BREW_FAILED", "INVENTORY_ITEM_NOT_FOUND", "NOT_A_SEED"],
             500: ["SPARK_ITEM_NOT_FOUND", "INTERNAL_ERROR"],
         }
         for status, codes in mapping.items():
