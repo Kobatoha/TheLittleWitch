@@ -292,10 +292,29 @@
             };
             showMessage("...", "");
             try {
-                const r = await fetch(urls[action], { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(bodies[action]) });
-                if (r.ok) { showMessage("✅ Успешно!", "success"); setTimeout(() => location.reload(), 800); }
-                else { const e = await r.json(); showMessage("❌ " + e.detail, "error"); }
-            } catch { showMessage("❌ Ошибка соединения", "error"); }
+                const r = await fetch(urls[action], {
+                    method: "POST",
+                    headers: {"Content-Type":"application/json"},
+                    body: JSON.stringify(bodies[action])
+                });
+                if (r.ok) {
+                    const d = await r.json();
+
+                    // Если грядка удалена — редирект
+                    if (d.redirect) {
+                        window.location.href = d.redirect;
+                        return;
+                    }
+
+                    showMessage("✅ Успешно!", "success");
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    const e = await r.json();
+                    showMessage("❌ " + e.detail, "error");
+                }
+            } catch {
+                showMessage("❌ Ошибка соединения", "error");
+            }
         }
     </script>
 </body>

@@ -8,7 +8,10 @@ SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATABASE_PATH.as_posix()}")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres:sirok123@localhost:5432/tlw"
+)
 
 # Временный ID игрока (потом заменим на авторизацию)
 TEMP_PLAYER_ID: int = 1

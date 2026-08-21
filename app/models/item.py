@@ -1,5 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
-
+from sqlalchemy import Column, Integer, String
 from app.core.database import Base
 
 
@@ -14,7 +13,7 @@ class Item(Base):
     potency_boost = Column(Integer, default=0)  # бонус к Силе Рода (для семян)
     icon = Column(String, nullable=True)
     sell_price = Column(Integer, default=10)
-    linked_plant_id = Column(Integer, ForeignKey("plants.id"), nullable=True)
+    linked_plant_id = Column(Integer, nullable=True)  # без ForeignKey
 
     def __str__(self):
         return f"{self.name} ({self.item_type}, {self.rarity})"

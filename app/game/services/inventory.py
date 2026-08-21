@@ -80,6 +80,7 @@ def get_player_items_for_shop(db: Session, player_id: int) -> list:
     items = db.query(Inventory).filter(
         Inventory.player_id == player_id,
         Inventory.quantity > 0
-    ).order_by(Inventory.item.has(Item.item_type == "rare").desc(),
-               Inventory.item.has(Item.sell_price).desc()).all()
+    ).order_by(
+        Inventory.item.has(Item.item_type == "rare").desc(),
+        Inventory.item.has(Item.sell_price > 0).desc()).all()
     return items

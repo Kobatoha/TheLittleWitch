@@ -274,9 +274,13 @@ class GardenService:
             item = None
 
         if not item:
-            item = Item(name=f"Ингредиент: {bed.plant.name}", item_type="ingredient", rarity="common")
-            self.db.add(item)
-            self.db.flush()
+            item = self.db.query(Item).filter(
+                Item.name == f"Ингредиент: {bed.plant.name}"
+            ).first()
+            if not item:
+                item = Item(name=f"Ингредиент: {bed.plant.name}", item_type="ingredient", rarity="common")
+                self.db.add(item)
+                self.db.flush()
 
         add_item_to_inventory(self.db, self.player_id, item.id, main_multiplier, quality, bed.id)
 
@@ -373,8 +377,11 @@ class GardenService:
         bed.harvests_left -= 1
 
         if bed.harvests_left <= 0 or bed.vitality <= 0:
+            # Удаляем логи перед удалением грядки
             self.db.query(CareLog).filter(CareLog.garden_bed_id == bed.id).delete()
             self.db.delete(bed)
+
+        self.db.commit()
 
     def harvest_bed(self, bed_id: int) -> dict:
         bed = self._get_living_bed(bed_id)
@@ -388,8 +395,6 @@ class GardenService:
             "bonus_harvest": self._roll_bonus_drops(bed),
             "rare_harvest": self._roll_rare_drop(bed) + self._roll_seed_drop(bed),
         }
-
-        self._apply_harvest_consequences(bed)
 
         loot_parts = []
         for h in result["main_harvest"]:
@@ -406,12 +411,13 @@ class GardenService:
                    "positive", details)
 
         self.player.total_harvests += 1
-        self.db.commit()
+        was_last_harvest = bed.harvests_left <= 1
 
-        # Если грядка удалена — возвращаем redirect
-        redirect_url = None
-        if bed.harvests_left <= 0 and bed.vitality <= 0:
-            redirect_url = "/api/game/garden/page"
+        self._apply_harvest_consequences(bed)
+
+        redirect_url = "/api/game/garden/page" if was_last_harvest else None
+
+        self.db.commit()
 
         return {
             "plant_name": bed.plant_name,

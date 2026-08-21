@@ -1,8 +1,8 @@
-"""full schema
+"""full schema no fk
 
-Revision ID: e99eec036230
+Revision ID: 1e11ebae0dd0
 Revises: 
-Create Date: 2026-08-19 01:17:40.994461
+Create Date: 2026-08-21 23:21:24.075278
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e99eec036230'
+revision: str = '1e11ebae0dd0'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -38,7 +38,6 @@ def upgrade() -> None:
     sa.Column('icon', sa.String(), nullable=True),
     sa.Column('sell_price', sa.Integer(), nullable=True),
     sa.Column('linked_plant_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['linked_plant_id'], ['plants.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
     )
@@ -55,6 +54,18 @@ def upgrade() -> None:
     sa.UniqueConstraint('level')
     )
     op.create_index(op.f('ix_level_rewards_id'), 'level_rewards', ['id'], unique=False)
+    op.create_table('users',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('username', sa.String(length=50), nullable=False),
+    sa.Column('email', sa.String(length=255), nullable=False),
+    sa.Column('hashed_password', sa.String(length=255), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('is_superuser', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
+    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_table('plants',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -77,18 +88,6 @@ def upgrade() -> None:
     sa.UniqueConstraint('name')
     )
     op.create_index(op.f('ix_plants_id'), 'plants', ['id'], unique=False)
-    op.create_table('users',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('username', sa.String(length=50), nullable=False),
-    sa.Column('email', sa.String(length=255), nullable=False),
-    sa.Column('hashed_password', sa.String(length=255), nullable=True),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('is_superuser', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
-    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_table('players',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -106,7 +105,7 @@ def upgrade() -> None:
     sa.Column('total_coins_earned', sa.Integer(), nullable=False),
     sa.Column('total_moon_baths', sa.Integer(), nullable=False),
     sa.Column('days_in_game', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -137,6 +136,7 @@ def upgrade() -> None:
     sa.Column('vitality', sa.Integer(), nullable=True),
     sa.Column('essence', sa.Integer(), nullable=True),
     sa.Column('growth_stage', sa.Integer(), nullable=True),
+    sa.Column('plant_level', sa.Integer(), nullable=True),
     sa.Column('last_watered_at', sa.DateTime(), nullable=True),
     sa.Column('last_cleaned_at', sa.DateTime(), nullable=True),
     sa.Column('last_harvested_at', sa.DateTime(), nullable=True),
@@ -144,8 +144,8 @@ def upgrade() -> None:
     sa.Column('harvests_left', sa.Integer(), nullable=True),
     sa.Column('recovery_until', sa.DateTime(), nullable=True),
     sa.Column('last_daily_update', sa.DateTime(), nullable=True),
-    sa.Column('planted_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('planted_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['plant_id'], ['plants.id'], ),
     sa.ForeignKeyConstraint(['player_id'], ['players.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -158,7 +158,7 @@ def upgrade() -> None:
     sa.Column('perk_name', sa.String(length=100), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
-    sa.Column('unlocked_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('unlocked_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['player_id'], ['players.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -172,7 +172,7 @@ def upgrade() -> None:
     sa.Column('effect', sa.String(), nullable=True),
     sa.Column('mood', sa.String(), nullable=True),
     sa.Column('details', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['garden_bed_id'], ['garden_beds.id'], ),
     sa.ForeignKeyConstraint(['player_id'], ['players.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -185,7 +185,7 @@ def upgrade() -> None:
     sa.Column('quantity', sa.Integer(), nullable=True),
     sa.Column('quality', sa.String(), nullable=True),
     sa.Column('source_bed_id', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['item_id'], ['items.id'], ),
     sa.ForeignKeyConstraint(['player_id'], ['players.id'], ),
     sa.ForeignKeyConstraint(['source_bed_id'], ['garden_beds.id'], ),
@@ -211,11 +211,11 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_players_user_id'), table_name='players')
     op.drop_index(op.f('ix_players_nickname'), table_name='players')
     op.drop_table('players')
+    op.drop_index(op.f('ix_plants_id'), table_name='plants')
+    op.drop_table('plants')
     op.drop_index(op.f('ix_users_username'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
-    op.drop_index(op.f('ix_plants_id'), table_name='plants')
-    op.drop_table('plants')
     op.drop_index(op.f('ix_level_rewards_id'), table_name='level_rewards')
     op.drop_table('level_rewards')
     op.drop_index(op.f('ix_items_id'), table_name='items')
