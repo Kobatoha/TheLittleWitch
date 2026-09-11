@@ -3,6 +3,26 @@ from app.models.player import Player
 from app.models.item import Item
 from app.models.inventory import Inventory
 from app.models.perk import Perk
+from app.core import balance
+
+
+def _plant_seed(client, seeded_db, plant_name="Тестовое растение"):
+    from app.models.item import Item
+    from app.models.inventory import Inventory
+    from app.models.plant import Plant
+
+    plant = seeded_db.query(Plant).filter(Plant.name == plant_name).first()
+    seed = seeded_db.query(Item).filter(
+        Item.item_type == "seed",
+        Item.linked_plant_id == plant.id
+    ).first()
+
+    inv = Inventory(player_id=1, item_id=seed.id, quantity=5, quality="Обычный")
+    seeded_db.add(inv)
+    seeded_db.commit()
+
+    r = client.post("/api/game/garden/plant", json={"seed_item_id": inv.id})
+    return r
 
 
 class TestProfileEndpoints:
@@ -77,7 +97,7 @@ class TestProfileEndpoints:
 
         # Сажаем и поливаем
         plant = seeded_db_with_perks.query(Plant).first()
-        r1 = client_with_perks.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        r1 = _plant_seed(client_with_perks, seeded_db_with_perks)
         bed_id = r1.json()["id"]
         print(f"Посадили, bed_id={bed_id}")
 
@@ -97,9 +117,6 @@ class TestProfileEndpoints:
 
     def test_perk_extra_bed_works(self, client_with_perks, seeded_db_with_perks):
         """Перк extra_bed увеличивает лимит грядок."""
-        from app.models.perk import Perk
-        from app.core import balance
-
         perk = Perk(player_id=1, perk_code="extra_bed", perk_name="+1 кадка")
         seeded_db_with_perks.add(perk)
         seeded_db_with_perks.commit()
@@ -109,11 +126,11 @@ class TestProfileEndpoints:
 
         # Сажаем max_beds раз
         for _ in range(max_beds):
-            r = client_with_perks.post("/api/game/garden/plant", json={"plant_id": plant.id})
+            r = _plant_seed(client_with_perks, seeded_db_with_perks)
             assert r.status_code == 200
 
         # Ещё одна — ошибка
-        r = client_with_perks.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        r = _plant_seed(client_with_perks, seeded_db_with_perks)
         assert r.status_code == 400
 
     def test_use_potion_triggers_level_up(self, client_with_perks, seeded_db_with_perks):

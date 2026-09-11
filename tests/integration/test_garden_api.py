@@ -9,6 +9,27 @@ from app.models.inventory import Inventory
 from app.models.item import Item
 
 
+def _plant_seed(client, seeded_db, plant_name="Тестовое растение"):
+    from app.models.item import Item
+    from app.models.inventory import Inventory
+
+    seed = seeded_db.query(Item).filter(
+        Item.item_type == "seed",
+        Item.linked_plant_id == seeded_db.query(Plant).filter(Plant.name == plant_name).first().id
+    ).first()
+
+    inv = seeded_db.query(Inventory).filter(
+        Inventory.player_id == 1, Inventory.item_id == seed.id
+    ).first()
+    if not inv:
+        inv = Inventory(player_id=1, item_id=seed.id, quantity=5, quality="Обычный")
+        seeded_db.add(inv)
+        seeded_db.commit()
+
+    r = client.post("/api/game/garden/plant", json={"seed_item_id": inv.id})
+    return r
+
+
 class TestGardenEndpoints:
     def test_get_garden_empty(self, client, seeded_db):
         response = client.get("/api/game/garden")
@@ -18,9 +39,7 @@ class TestGardenEndpoints:
     def test_plant_seed_success(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
         
-        response = client.post("/api/game/garden/plant", json={
-            "plant_id": plant.id
-        })
+        response = _plant_seed(client, seeded_db)
         
         assert response.status_code == 200
         data = response.json()
@@ -30,15 +49,13 @@ class TestGardenEndpoints:
         assert data["is_dead"] is False
 
     def test_plant_seed_invalid_id(self, client, seeded_db):
-        response = client.post("/api/game/garden/plant", json={
-            "plant_id": 999
-        })
-        assert response.status_code == 404
+        response = client.post("/api/game/garden/plant", json={"seed_item_id": 99999})
+        assert response.status_code == 400  # или 404, смотря что возвращает
 
     def test_get_garden_after_planting(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
 
-        client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        _plant_seed(client, seeded_db)
 
         response = client.get("/api/game/garden")
         assert response.status_code == 200
@@ -49,7 +66,7 @@ class TestGardenEndpoints:
     def test_water_bed_success(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
         
-        plant_resp = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        plant_resp = _plant_seed(client, seeded_db)
         bed_id = plant_resp.json()["id"]
 
         response = client.post("/api/game/garden/water", json={"bed_id": bed_id})
@@ -66,7 +83,7 @@ class TestGardenEndpoints:
     def test_double_water_blocked(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
         
-        plant_resp = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        plant_resp = _plant_seed(client, seeded_db)
         bed_id = plant_resp.json()["id"]
 
         r1 = client.post("/api/game/garden/water", json={"bed_id": bed_id})
@@ -78,7 +95,7 @@ class TestGardenEndpoints:
     def test_clean_bed_success(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
         
-        plant_resp = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        plant_resp = _plant_seed(client, seeded_db)
         bed_id = plant_resp.json()["id"]
         
         response = client.post("/api/game/garden/clean", json={"bed_id": bed_id})
@@ -91,16 +108,16 @@ class TestGardenEndpoints:
         plant = seeded_db.query(Plant).first()
 
         for _ in range(4):
-            resp = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+            resp = _plant_seed(client, seeded_db)
             assert resp.status_code == 200
 
-        resp = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        resp = _plant_seed(client, seeded_db)
         assert resp.status_code == 400
 
     def test_harvest_requires_growth(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
         
-        plant_resp = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        plant_resp = _plant_seed(client, seeded_db)
         bed_id = plant_resp.json()["id"]
 
         response = client.post("/api/game/garden/harvest", json={"bed_id": bed_id})
@@ -109,7 +126,7 @@ class TestGardenEndpoints:
     def test_moon_bath_success(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
         
-        plant_resp = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        plant_resp = _plant_seed(client, seeded_db)
         bed_id = plant_resp.json()["id"]
         
         response = client.post("/api/game/garden/moon-bath", json={"bed_id": bed_id})
@@ -121,7 +138,7 @@ class TestGardenEndpoints:
     def test_moon_bath_increases_stat(self, client, seeded_db):
         """После лунной ванны счётчик увеличивается."""
         plant = seeded_db.query(Plant).first()
-        r = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        r = _plant_seed(client, seeded_db)
         bed_id = r.json()["id"]
 
         player_before = seeded_db.query(Player).filter(Player.id == 1).first()
@@ -141,7 +158,7 @@ class TestGardenEndpoints:
     def test_harvest_success_after_growth(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
 
-        seed_plant = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        seed_plant = _plant_seed(client, seeded_db)
         bed_id = seed_plant.json()["id"]
 
         bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
@@ -157,7 +174,7 @@ class TestGardenEndpoints:
     def test_harvest_increases_harvest_stat(self, client, seeded_db):
         """После сбора счётчик урожаев увеличивается."""
         plant = seeded_db.query(Plant).first()
-        r = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        r = _plant_seed(client, seeded_db)
         bed_id = r.json()["id"]
 
         bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
@@ -175,7 +192,7 @@ class TestGardenEndpoints:
 
     def test_harvest_resets_essence(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
-        seed_plant = client.post("api/game/garden/plant", json={"plant_id": plant.id})
+        seed_plant = _plant_seed(client, seeded_db)
         bed_id = seed_plant.json()["id"]
 
         bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
@@ -191,7 +208,7 @@ class TestGardenEndpoints:
 
     def test_harvest_reduces_vitality(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
-        seed_plant = client.post("api/game/garden/plant", json={"plant_id": plant.id})
+        seed_plant = _plant_seed(client, seeded_db)
         bed_id = seed_plant.json()["id"]
 
         bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
@@ -207,7 +224,7 @@ class TestGardenEndpoints:
 
     def test_daily_update_advances_growth(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
-        seed_plant = client.post("api/game/garden/plant", json={"plant_id": plant.id})
+        seed_plant = _plant_seed(client, seeded_db)
         bed_id = seed_plant.json()["id"]
 
         bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
@@ -223,7 +240,7 @@ class TestGardenEndpoints:
 
     def test_daily_update_reduces_vitality(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
-        seed_plant = client.post("api/game/garden/plant", json={"plant_id": plant.id})
+        seed_plant = _plant_seed(client, seeded_db)
         bed_id = seed_plant.json()["id"]
 
         bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()
@@ -239,7 +256,7 @@ class TestGardenEndpoints:
 
     def test_use_spark_advances_growth(self, client, seeded_db):
         plant = seeded_db.query(Plant).first()
-        seed_plant = client.post("api/game/garden/plant", json={"plant_id": plant.id})
+        seed_plant = _plant_seed(client, seeded_db)
         bed_id = seed_plant.json()["id"]
 
         spark = seeded_db.query(Item).filter(Item.name == ITEM_GROWTH_SPARK).first()
@@ -264,7 +281,7 @@ class TestGardenEndpoints:
     def test_plant_removed_after_exhausted(self, client, seeded_db):
         """После исчерпания сборов грядка удаляется."""
         plant = seeded_db.query(Plant).first()
-        r = client.post("/api/game/garden/plant", json={"plant_id": plant.id})
+        r = _plant_seed(client, seeded_db)
         bed_id = r.json()["id"]
 
         bed = seeded_db.query(GardenBed).filter(GardenBed.id == bed_id).first()

@@ -58,7 +58,7 @@ class TestBrewEndpoints:
                 inv = Inventory(
                     player_id=1,
                     item_id=ing_id,
-                    quantity=3,
+                    quantity=1,
                     quality="Обычный"
                 )
                 seeded_db.add(inv)
@@ -74,19 +74,25 @@ class TestBrewEndpoints:
     def test_ingredients_consumed_after_brew(self, client, seeded_db):
         recipe = seeded_db.query(Recipe).first()
 
-        for ing_id in [recipe.ingredient_1_id, recipe.ingredient_2_id]:
-            if ing_id:
-                inv = Inventory(
-                    player_id=1,
-                    item_id=ing_id,
-                    quantity=1,
-                    quality="Обычный"
-                )
-                seeded_db.add(inv)
+        seeded_db.query(Inventory).filter(Inventory.player_id == 1).delete()
         seeded_db.commit()
 
-        response1 = client.post("/api/game/brew", json={"recipe_id": recipe.id})
-        assert response1.status_code == 200
+        for ing_id in [recipe.ingredient_1_id, recipe.ingredient_2_id]:
+            if ing_id:
+                seeded_db.add(Inventory(
+                    player_id=1, item_id=ing_id, quantity=1, quality="Обычный"
+                ))
+        seeded_db.commit()
 
-        response2 = client.post("/api/game/brew", json={"recipe_id": recipe.id})
-        assert response2.status_code == 400
+        r1 = client.post("/api/game/brew", json={"recipe_id": recipe.id})
+        print(f"Первая варка: {r1.status_code}")
+        assert r1.status_code == 200
+
+        # Проверяем инвентарь
+        inv_after = seeded_db.query(Inventory).filter(Inventory.player_id == 1).all()
+        for inv in inv_after:
+            print(f"  {inv.item.name}: {inv.quantity}")
+
+        r2 = client.post("/api/game/brew", json={"recipe_id": recipe.id})
+        print(f"Вторая варка: {r2.status_code} {r2.text}")
+        assert r2.status_code == 400
