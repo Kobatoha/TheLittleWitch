@@ -192,19 +192,17 @@ class GardenService:
         moon = get_moon_phase()
         bonus = moon["essence_bonus"]
 
-        if bonus == 0:
-            raise GameError(ErrorCode.MOON_TOO_WEAK)
-
         plant = bed.plant
         vitality_bonus = bonus // 2
         bed.vitality = min(bed.vitality + vitality_bonus, max(plant.base_vitality, 100))
         bed.essence += bonus
         bed.last_moon_bath_at = datetime.utcnow()
 
-        log_action(self.db, self.player_id, bed.id, ACTION_MOON,
-        f"Лунная ванна ({moon['name']})",
-        f"❤️+{vitality_bonus}% ✨+{bonus}",
-        "positive" if bonus >= 10 else "neutral")
+        log_action(
+            self.db, self.player_id, bed.id, "moon",
+            f"Лунная ванна ({moon['name']})",
+            f"❤️+{vitality_bonus}% ✨+{bonus}" if bonus > 0 else "Без эффекта (новолуние)",
+            "neutral")
 
         self.player.total_moon_baths += 1
         self.db.commit()
